@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台股回測工具 — GinCat</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --border: #e1e4e8;
+      --primary: #0969da;
+      --primary-hover: #0550ae;
+      --danger: #cf222e;
+      --success: #1a7f37;
+      --text: #1f2328;
+      --muted: #656d76;
+      --code-bg: #f6f8fa;
+      --accent: #fd8c73;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 8px rgba(0,0,0,.04);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    header h1 { font-size: 16px; font-weight: 600; }
+    header .subtitle { color: var(--muted); font-size: 12px; }
+    .cat-emoji { font-size: 20px; }
+    .header-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .header-link:hover { text-decoration: underline; }
+    main { max-width: 1200px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--code-bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card-header h2 {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-body { padding: 16px; }
+
+    /* Controls */
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    input[type="text"], input[type="number"], select {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color .15s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(9,105,218,.1);
+    }
+    input[type="text"] { width: 100px; }
+    select { cursor: pointer; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, box-shadow .15s;
+      white-space: nowrap;
+      background: var(--surface);
+      color: var(--text);
+    }
+    .btn:hover { background: var(--bg); }
+    .btn:active { box-shadow: inset 0 1px 2px rgba(0,0,0,.1); }
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+    .btn-success { background: #2da44e; color: #fff; border-color: #2da44e; }
+    .btn-success:hover { background: var(--success); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-info { background: #ddf4ff; color: #0969da; }
+    .badge-success { background: #dafbe1; color: #1a7f37; }
+    .badge-danger { background: #ffd8d3; color: #cf222e; }
+
+    /* Status */
+    #status {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: none;
+    }
+    #status.info  { background: #ddf4ff; color: #0550ae; display: block; }
+    #status.error { background: #ffd8d3; color: var(--danger); display: block; }
+    #status.ok    { background: #dafbe1; color: var(--success); display: block; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; max-height: 340px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td {
+      padding: 6px 10px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    th { background: var(--code-bg); font-weight: 600; position: sticky; top: 0; z-index: 1; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    tr:hover td { background: #f6f8fa; }
+    td.up   { color: var(--danger); }
+    td.down { color: #0969da; }
+
+    /* Code Editor */
+    #editor {
+      width: 100%;
+      min-height: 280px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--code-bg);
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      tab-size: 2;
+      transition: border-color .15s;
+    }
+    #editor:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(9,105,218,.1); }
+
+    /* Console */
+    #console-output {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12.5px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      min-height: 80px;
+      max-height: 240px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .log-line  { color: #e6edf3; }
+    .log-warn  { color: #e3b341; }
+    .log-error { color: #f85149; }
+    .log-info  { color: #58a6ff; }
+
+    /* Results summary */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .summary-card {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+    .summary-card .label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .summary-card .value { font-size: 20px; font-weight: 700; }
+    .summary-card .value.up   { color: var(--danger); }
+    .summary-card .value.down { color: var(--primary); }
+    .summary-card .value.neutral { color: var(--text); }
+
+    /* Canvas chart */
+    #chart-wrap { position: relative; }
+    canvas { display: block; width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      margin-top: 8px;
+      color: var(--muted);
+    }
+    .legend-dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    /* Trades table */
+    #trades-section { display: none; }
+
+    /* JSON preview */
+    #json-preview {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre;
+      display: none;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 36px; margin-bottom: 8px; }
+
+    .separator { height: 1px; background: var(--border); margin: 12px 0; }
+    .mt-12 { margin-top: 12px; }
+    .flex-end { display: flex; justify-content: flex-end; }
+
+    /* Tab bar */
+    .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+    .tab-btn {
+      padding: 8px 16px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: color .15s, border-color .15s;
+      margin-bottom: -1px;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Stock tag input */
+    .stock-tags-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+      min-height: 34px;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      cursor: text;
+      transition: border-color .15s, box-shadow .15s;
+      min-width: 260px;
+    }
+    .stock-tags-wrap:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(9,105,218,.1);
+    }
+    .stock-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 6px 2px 9px;
+      background: #ddf4ff;
+      color: #0550ae;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .stock-tag .remove-tag {
+      cursor: pointer;
+      opacity: .55;
+      font-size: 15px;
+      line-height: 1;
+      padding: 0 1px;
+      user-select: none;
+    }
+    .stock-tag .remove-tag:hover { opacity: 1; }
+    .stock-tag-input {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      font-size: 13px;
+      min-width: 90px;
+      flex: 1;
+      background: transparent;
+      padding: 2px 2px;
+    }
+
+    /* Upload area */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      color: var(--muted);
+      user-select: none;
+    }
+    .upload-area:hover, .upload-area.drag-over {
+      border-color: var(--primary);
+      background: #f0f7ff;
+      color: var(--primary);
+    }
+    .upload-area .upload-icon { font-size: 30px; margin-bottom: 6px; }
+    .upload-area input[type="file"] { display: none; }
+    #upload-status { display: none; }
+    #upload-status.info  { background: #ddf4ff; color: #0550ae; display: block; }
+    #upload-status.error { background: #ffd8d3; color: var(--danger); display: block; }
+    #upload-status.ok    { background: #dafbe1; color: var(--success); display: block; }
+
+    /* Stock selector pills (data preview) */
+    .stock-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .stock-pill {
+      padding: 3px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--muted);
+      transition: all .15s;
+    }
+    .stock-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .stock-pill:hover:not(.active) { background: var(--bg); color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">
+    <span class="cat-emoji">🐱</span>
+    <div>
+      <h1>台股回測工具</h1>
+      <div class="subtitle">抓取 TWSE 資料 &bull; 匯出 JSON &bull; 在瀏覽器寫 JS 回測</div>
+    </div>
+  </div>
+  <a class="header-link" href="../index.html">← 回首頁</a>
+</header>
+
+<main>
+
+  <!-- ① 資料抓取 -->
+  <div class="card">
+    <div class="card-header">
+      <h2>📡 資料抓取</h2>
+      <span class="badge badge-info">台灣證券交易所 TWSE</span>
+    </div>
+    <div class="card-body">
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-btn-fetch"  onclick="switchFetchTab('fetch')">🌐 線上抓取</button>
+        <button class="tab-btn"        id="tab-btn-upload" onclick="switchFetchTab('upload')">📂 上傳 JSON</button>
+      </div>
+
+      <!-- 線上抓取 pane -->
+      <div id="pane-fetch" class="tab-pane active">
+        <div class="controls">
+          <div class="form-group" style="flex:1;min-width:260px;">
+            <label>股票代碼（最多 10 個，輸入後按 Enter 或逗號新增）</label>
+            <div class="stock-tags-wrap" id="stock-tags-box" onclick="focusStockInput()">
+              <input type="text" class="stock-tag-input" id="stock-input"
+                     placeholder="輸入代碼後按 Enter" maxlength="6"
+                     oninput="onStockInputChange(event)"
+                     onkeydown="onStockInputKey(event)">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>開始年份（民國）</label>
+            <select id="year-start"></select>
+          </div>
+          <div class="form-group">
+            <label>開始月份</label>
+            <select id="month-start"></select>
+          </div>
+          <div class="form-group">
+            <label>結束年份（民國）</label>
+            <select id="year-end"></select>
+          </div>
+          <div class="form-group">
+            <label>結束月份</label>
+            <select id="month-end"></select>
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" id="fetch-btn" onclick="fetchData()">
+              ⬇ 抓取資料
+            </button>
+          </div>
+        </div>
+        <div id="status" class="mt-12"></div>
+      </div>
+
+      <!-- 上傳 JSON pane -->
+      <div id="pane-upload" class="tab-pane">
+        <div class="upload-area" id="upload-area"
+             onclick="document.getElementById('file-input').click()"
+             ondragover="onDragOver(event)"
+             ondragleave="onDragLeave(event)"
+             ondrop="onDrop(event)">
+          <input type="file" id="file-input" accept=".json" multiple onchange="handleFileUpload(this.files)">
+          <div class="upload-icon">📂</div>
+          <div style="font-weight:600;margin-bottom:4px;">點擊選擇 JSON 檔，或拖曳至此</div>
+          <div style="font-size:12px;">支援多個 JSON 檔同時上傳（每檔對應一支股票）<br>格式：陣列 <code>[{...}]</code> 或多股票物件 <code>{"2330":[...], "0050":[...]}</code></div>
+        </div>
+        <div id="upload-status" class="mt-12" style="padding:8px 12px;border-radius:6px;font-size:13px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 資料預覽 -->
+  <div class="card" id="data-card">
+    <div class="card-header">
+      <h2>📋 資料預覽 <span id="row-count" class="badge badge-success" style="display:none"></span></h2>
+      <div class="btn-group">
+        <button class="btn" id="copy-json-btn" onclick="copyJSON()" style="display:none">📋 複製 JSON</button>
+        <button class="btn btn-success" id="export-json-btn" onclick="exportJSON()" style="display:none">⬇ 匯出 JSON</button>
+        <button class="btn" id="toggle-preview-btn" onclick="toggleJSONPreview()" style="display:none">👁 預覽 JSON</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="table-container">
+        <div class="empty-state">
+          <div class="icon">📊</div>
+          <div>請先抓取股票資料</div>
+        </div>
+      </div>
+      <div id="json-preview"></div>
+    </div>
+  </div>
+
+  <!-- ③ 回測編輯器 -->
+  <div class="card">
+    <div class="card-header">
+      <h2>🔬 回測編輯器</h2>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:var(--muted)">Ctrl+Enter 執行</span>
+        <input type="file" id="js-import-input" accept=".js" style="display:none" onchange="importEditorJS(this.files)">
+        <button class="btn" onclick="document.getElementById('js-import-input').click()">⬆ 匯入 JS</button>
+        <button class="btn" onclick="exportEditorJS()">⬇ 匯出 JS</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+        可用變數：<code>data</code>（目前選取股票的陣列）、<code>dataMap</code>（所有股票 <code>{"2330":[...], ...}</code>）、<code>account</code>（含 <code>capital</code> / <code>shares</code> / <code>trades</code> / <code>buy(amount, price, actionDate)</code> / <code>sell(amount, price, actionDate)</code> / <code>getFinalCapital(lastPrice = 0)</code> / <code>setOptions({ initialCapital, feeRate, taxRate, minFee })</code>；<code>actionDate</code> 必填，建議直接傳 <code>row.date</code>（如 <code>114/05/08</code>，也接受 <code>2026-05-08</code>））、<code>print()</code>（輸出到 Console）。<br>
+        每筆資料包含：<code>{ date, open, high, low, close, volume, amount, change, trades }</code>。<br>
+        回傳一個物件可觸發績效摘要：<code>return { trades: [...], initialCapital, finalCapital }</code>（若未回傳，會以 <code>account</code> 自動產生）
+      </div>
+      <textarea id="editor" spellcheck="false" autocomplete="off"></textarea>
+      <div class="mt-12 flex-end">
+        <button class="btn btn-primary" onclick="runBacktest()">▶ 執行回測</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 回測結果 -->
+  <div class="card" id="results-card" style="display:none">
+    <div class="card-header">
+      <h2>📈 回測結果</h2>
+    </div>
+    <div class="card-body" id="results-body">
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ─────────────────────────────────────────
+// 初始化年月選項
+// ─────────────────────────────────────────
+(function initSelects() {
+  const now = new Date();
+  const rocYear = now.getFullYear() - 1911;
+  const yearStartEl = document.getElementById('year-start');
+  const yearEndEl   = document.getElementById('year-end');
+  const monthStartEl = document.getElementById('month-start');
+  const monthEndEl   = document.getElementById('month-end');
+
+  for (let y = rocYear; y >= 90; y--) {
+    const o1 = new Option(y, y);
+    const o2 = new Option(y, y);
+    yearStartEl.add(o1);
+    yearEndEl.add(o2);
+  }
+  // default: start = 12 months ago, end = current
+  yearStartEl.value = rocYear - 1;
+  yearEndEl.value   = rocYear;
+
+  for (let m = 1; m <= 12; m++) {
+    const label = String(m).padStart(2, '0');
+    monthStartEl.add(new Option(label, m));
+    monthEndEl.add(new Option(label, m));
+  }
+  monthStartEl.value = now.getMonth() + 1; // same month, 1 year ago
+  monthEndEl.value   = now.getMonth() + 1;
+})();
+
+// ─────────────────────────────────────────
+// 常數
+// ─────────────────────────────────────────
+const MAX_MONTHS   = 36;  // 一次最多抓取月數
+const API_DELAY_MS = 300; // 每次 TWSE 請求間隔（ms），避免過快
+const MAX_STOCKS   = 10;  // 一次最多同時操作的股票數
+
+// ─────────────────────────────────────────
+// 全域資料
+// ─────────────────────────────────────────
+let stockDataMap = {};  // { stockNo: [{...}, ...] } 所有已載入的股票
+let stockData    = [];  // 目前選取股票的資料（回測時的 data）
+let activeStock  = '';  // 目前選取的股票代號
+const stockNos   = [];  // tag input 目前輸入的代號清單
+
+// 預設新增 2330（必須在 stockNos 宣告後才能呼叫）
+addStockTag('2330');
+
+// ─────────────────────────────────────────
+// Tab 切換（抓取 / 上傳）
+// ─────────────────────────────────────────
+function switchFetchTab(tab) {
+  ['fetch', 'upload'].forEach(t => {
+    document.getElementById(`pane-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
+  });
+}
+
+// ─────────────────────────────────────────
+// Stock Tag Input
+// ─────────────────────────────────────────
+function addStockTag(code) {
+  code = code.trim().toUpperCase().replace(/[^0-9A-Z]/g, '');
+  if (!code) return;
+  if (stockNos.includes(code)) return;
+  if (stockNos.length >= MAX_STOCKS) return;
+  stockNos.push(code);
+  renderStockTags();
+}
+
+function removeStockTag(code) {
+  const idx = stockNos.indexOf(code);
+  if (idx > -1) stockNos.splice(idx, 1);
+  renderStockTags();
+}
+
+function renderStockTags() {
+  const box   = document.getElementById('stock-tags-box');
+  const input = document.getElementById('stock-input');
+  // 移除舊 tags
+  [...box.querySelectorAll('.stock-tag')].forEach(el => el.remove());
+  // 插入 tag 到 input 前面
+  stockNos.forEach(code => {
+    const tag = document.createElement('span');
+    tag.className = 'stock-tag';
+    tag.innerHTML = `${code} <span class="remove-tag" onclick="removeStockTag('${code}')">×</span>`;
+    box.insertBefore(tag, input);
+  });
+  input.placeholder = stockNos.length >= MAX_STOCKS
+    ? `已達上限 ${MAX_STOCKS} 個`
+    : (stockNos.length > 0 ? '再輸入代碼...' : '輸入代碼後按 Enter');
+}
+
+function focusStockInput() {
+  document.getElementById('stock-input').focus();
+}
+
+function onStockInputKey(e) {
+  const input = e.target;
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    addStockTag(input.value);
+    input.value = '';
+  } else if (e.key === 'Backspace' && input.value === '' && stockNos.length > 0) {
+    removeStockTag(stockNos[stockNos.length - 1]);
+  }
+}
+
+function onStockInputChange(e) {
+  const v = e.target.value;
+  // 自動偵測逗號分隔
+  if (v.includes(',')) {
+    v.split(',').forEach(s => addStockTag(s));
+    e.target.value = '';
+  }
+}
+
+// ─────────────────────────────────────────
+// 上傳 JSON
+// ─────────────────────────────────────────
+function setUploadStatus(msg, type) {
+  const el = document.getElementById('upload-status');
+  el.textContent = msg;
+  el.className = type;
+  el.style.padding = '8px 12px';
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('upload-area').classList.add('drag-over');
+}
+function onDragLeave(e) {
+  document.getElementById('upload-area').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-area').classList.remove('drag-over');
+  handleFileUpload(e.dataTransfer.files);
+}
+
+function handleFileUpload(files) {
+  if (!files || files.length === 0) return;
+  let loaded = 0;
+  const errors = [];
+
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const json = JSON.parse(e.target.result);
+        if (Array.isArray(json)) {
+          // 陣列格式：從檔名猜股票代號（twse-2330-xxx.json → 2330）
+          const baseName = file.name.replace(/\.json$/i, '');
+          const guessed  = baseName.split(/[-_.]/).find(s => /^\d{4,6}[A-Z]*$/i.test(s)) || baseName;
+          stockDataMap[guessed.toUpperCase()] = json;
+        } else if (json && typeof json === 'object') {
+          // 多股票物件格式 { '2330': [...], ... }
+          Object.entries(json).forEach(([k, v]) => {
+            if (Array.isArray(v)) stockDataMap[k] = v;
+          });
+        } else {
+          throw new Error('格式不支援，必須是陣列或多股票物件');
+        }
+      } catch (err) {
+        errors.push(`${file.name}：${err.message}`);
+      }
+      loaded++;
+      if (loaded === files.length) {
+        if (errors.length > 0) {
+          setUploadStatus(`❌ ${errors.join(' / ')}`, 'error');
+        }
+        const keys = Object.keys(stockDataMap);
+        if (keys.length > 0) {
+          activeStock = keys[0];
+          stockData   = stockDataMap[activeStock];
+          renderTable();
+          showExportButtons();
+          setUploadStatus(`✅ 已載入 ${keys.join('、')}（共 ${keys.reduce((s,k)=>s+stockDataMap[k].length,0)} 筆）`, 'ok');
+        }
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+// ─────────────────────────────────────────
+// 狀態顯示
+// ─────────────────────────────────────────
+function setStatus(msg, type = 'info') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = type;
+}
+function clearStatus() {
+  document.getElementById('status').className = '';
+}
+
+// ─────────────────────────────────────────
+// TWSE API 抓取（含 CORS proxy fallback）
+// ─────────────────────────────────────────
+async function fetchMonthData(stockNo, rocYear, month) {
+  // TWSE STOCK_DAY: date=YYYYMMDD (西元，用月份第一天)
+  const year = parseInt(rocYear) + 1911;
+  const dateStr = `${year}${String(month).padStart(2,'0')}01`;
+  const apiUrl = `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${dateStr}&stockNo=${stockNo}`;
+
+  // 嘗試直接請求（部分環境可行）
+  try {
+    const res = await fetch(apiUrl, { signal: AbortSignal.timeout(6000) });
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.stat === 'OK') return json;
+    }
+  } catch (_) { /* fall through to proxy */ }
+
+  // Proxy 1: corsproxy.io
+  try {
+    const proxy1 = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+    const res = await fetch(proxy1, { signal: AbortSignal.timeout(8000) });
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.stat === 'OK') return json;
+    }
+  } catch (_) { /* fall through */ }
+
+  // Proxy 2: allorigins
+  try {
+    const proxy2 = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+    const res = await fetch(proxy2, { signal: AbortSignal.timeout(10000) });
+    if (res.ok) {
+      const wrapper = await res.json();
+      const json = JSON.parse(wrapper.contents);
+      if (json && json.stat === 'OK') return json;
+    }
+  } catch (_) { /* all failed */ }
+
+  return null; // 此月份無資料（假日、下市等）
+}
+
+// 解析單筆 TWSE row
+function parseRow(row) {
+  const parseNum = s => parseFloat((s || '').replace(/,/g, '')) || 0;
+  const parseDelta = s => {
+    s = (s || '').trim();
+    if (s.startsWith('+')) return parseFloat(s.replace(/,/g,'')) || 0;
+    if (s.startsWith('-') || s.startsWith('▼')) return -(parseFloat(s.replace(/[▼,]/g,'')) || 0);
+    if (s.startsWith('▲')) return parseFloat(s.replace(/[▲,]/g,'')) || 0;
+    return parseFloat(s.replace(/,/g,'')) || 0;
+  };
+  return {
+    date:   row[0] || '',
+    volume: parseNum(row[1]),
+    amount: parseNum(row[2]),
+    open:   parseNum(row[3]),
+    high:   parseNum(row[4]),
+    low:    parseNum(row[5]),
+    close:  parseNum(row[6]),
+    change: parseDelta(row[7]),
+    trades: parseNum(row[8]),
+  };
+}
+
+// 主流程
+async function fetchData() {
+  if (stockNos.length === 0) { setStatus('請至少輸入一個股票代碼', 'error'); return; }
+
+  const yearStart  = parseInt(document.getElementById('year-start').value);
+  const monthStart = parseInt(document.getElementById('month-start').value);
+  const yearEnd    = parseInt(document.getElementById('year-end').value);
+  const monthEnd   = parseInt(document.getElementById('month-end').value);
+
+  // 建立月份序列
+  const months = [];
+  let y = yearStart, m = monthStart;
+  while (y < yearEnd || (y === yearEnd && m <= monthEnd)) {
+    months.push({ y, m });
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  if (months.length === 0) { setStatus('日期範圍錯誤', 'error'); return; }
+  if (months.length > MAX_MONTHS) { setStatus(`最多支援 ${MAX_MONTHS} 個月`, 'error'); return; }
+
+  const btn = document.getElementById('fetch-btn');
+  btn.disabled = true;
+  stockDataMap = {};
+
+  const totalRequests = stockNos.length * months.length;
+  let done = 0;
+
+  for (const stockNo of stockNos) {
+    const rows = [];
+    for (let i = 0; i < months.length; i++) {
+      const { y, m } = months[i];
+      done++;
+      setStatus(`⏳ [${done}/${totalRequests}] ${stockNo} — 抓取 ${y}年 ${m}月...`, 'info');
+      const json = await fetchMonthData(stockNo, y, m);
+      if (json && json.data) {
+        json.data.forEach(row => rows.push(parseRow(row)));
+      }
+      // 最後一支股票的最後一個月不需要延遲
+      const isLastRequest = stockNos.indexOf(stockNo) === stockNos.length - 1 && i === months.length - 1;
+      if (!isLastRequest) {
+        await sleep(API_DELAY_MS);
+      }
+    }
+    stockDataMap[stockNo] = rows;
+  }
+
+  btn.disabled = false;
+
+  const totalRows = Object.values(stockDataMap).reduce((s, v) => s + v.length, 0);
+  if (totalRows === 0) {
+    setStatus('❌ 未取得資料。請確認股票代碼正確，或目前網路環境不支援直接呼叫 TWSE API。', 'error');
+    return;
+  }
+
+  // 選第一支股票顯示
+  activeStock = stockNos[0];
+  stockData   = stockDataMap[activeStock];
+
+  const summary = stockNos.map(n => `${n}(${(stockDataMap[n]||[]).length}筆)`).join('、');
+  setStatus(`✅ 共取得 ${totalRows} 筆資料：${summary}`, 'ok');
+  renderTable();
+  showExportButtons();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─────────────────────────────────────────
+// 資料表格渲染
+// ─────────────────────────────────────────
+function selectStock(stockNo) {
+  activeStock = stockNo;
+  stockData   = stockDataMap[stockNo] || [];
+  renderTable();
+}
+
+function renderTable() {
+  const container = document.getElementById('table-container');
+  const stocks    = Object.keys(stockDataMap);
+
+  if (!stocks.length || !stockData.length) {
+    document.getElementById('row-count').style.display = 'none';
+    container.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div>無資料</div></div>';
+    return;
+  }
+
+  document.getElementById('row-count').textContent = `${activeStock} — ${stockData.length} 筆`;
+  document.getElementById('row-count').style.display = '';
+
+  // 多股票 selector pills
+  let selectorHTML = '';
+  if (stocks.length > 1) {
+    const pills = stocks.map(n =>
+      `<button class="stock-pill${n === activeStock ? ' active' : ''}" onclick="selectStock('${n}')">${n}</button>`
+    ).join('');
+    selectorHTML = `<div class="stock-selector">${pills}</div>`;
+  }
+
+  const rows = stockData.map(d => `
+    <tr>
+      <td>${d.date}</td>
+      <td>${fmt(d.open)}</td>
+      <td>${fmt(d.high)}</td>
+      <td>${fmt(d.low)}</td>
+      <td class="${d.change > 0 ? 'up' : d.change < 0 ? 'down' : ''}">${fmt(d.close)}</td>
+      <td class="${d.change > 0 ? 'up' : d.change < 0 ? 'down' : ''}">${d.change > 0 ? '+' : ''}${d.change.toFixed(2)}</td>
+      <td>${fmtVol(d.volume)}</td>
+      <td>${fmtVol(d.trades)}</td>
+    </tr>`).join('');
+
+  container.innerHTML = `
+    ${selectorHTML}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th><th>開盤</th><th>最高</th><th>最低</th><th>收盤</th><th>漲跌</th><th>成交股數</th><th>成交筆數</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function fmt(n)    { return n ? n.toFixed(2) : '-'; }
+function fmtVol(n) { return n ? n.toLocaleString() : '-'; }
+
+// ─────────────────────────────────────────
+// JSON 匯出 / 複製 / 預覽
+// ─────────────────────────────────────────
+function showExportButtons() {
+  ['copy-json-btn','export-json-btn','toggle-preview-btn'].forEach(id => {
+    document.getElementById(id).style.display = '';
+  });
+}
+
+function getJSON() {
+  const stocks = Object.keys(stockDataMap);
+  if (stocks.length === 1) {
+    return JSON.stringify(stockDataMap[stocks[0]], null, 2);
+  }
+  return JSON.stringify(stockDataMap, null, 2);
+}
+
+function exportJSON() {
+  const stocks  = Object.keys(stockDataMap);
+  const namePart = stocks.length === 1 ? stocks[0] : `multi-${stocks.join('-')}`;
+  const blob = new Blob([getJSON()], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `twse-${namePart}-${Date.now()}.json`;
+  a.click();
+}
+
+async function copyJSON() {
+  try {
+    await navigator.clipboard.writeText(getJSON());
+    const btn = document.getElementById('copy-json-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✅ 已複製';
+    setTimeout(() => btn.textContent = orig, 1500);
+  } catch (_) { alert('複製失敗，請手動複製 JSON 預覽區'); }
+}
+
+let jsonPreviewVisible = false;
+function toggleJSONPreview() {
+  jsonPreviewVisible = !jsonPreviewVisible;
+  const el = document.getElementById('json-preview');
+  if (jsonPreviewVisible) {
+    el.textContent = getJSON();
+    el.style.display = 'block';
+    document.getElementById('toggle-preview-btn').textContent = '🙈 隱藏 JSON';
+  } else {
+    el.style.display = 'none';
+    document.getElementById('toggle-preview-btn').textContent = '👁 預覽 JSON';
+  }
+}
+
+// ─────────────────────────────────────────
+// 預設回測範例
+// ─────────────────────────────────────────
+const DEFAULT_CODE = `// ── 台股回測範例：MA5 / MA20 黃金交叉策略 ──
+// data 陣列：每個元素含 { date, open, high, low, close, volume, amount, change, trades }
+// account 物件：account.buy(amount, price, actionDate)、account.sell(amount, price, actionDate)、account.getFinalCapital(lastPrice)
+// buy/sell 回傳 boolean（true=成交成功，false=金額/股數不足或參數不合法）
+// print() 等同 console.log，輸出到下方 Console
+
+const LOT = 1000; // 台股最小交易單位（股）
+
+// 計算簡單移動平均
+function sma(arr, n, i) {
+  if (i < n - 1) return null;
+  return arr.slice(i - n + 1, i + 1).reduce((s, d) => s + d.close, 0) / n;
+}
+
+for (let i = 0; i < data.length; i++) {
+  const ma5  = sma(data, 5, i);
+  const ma20 = sma(data, 20, i);
+  if (!ma5 || !ma20) continue;
+
+  const prevMa5  = sma(data, 5, i - 1);
+  const prevMa20 = sma(data, 20, i - 1);
+  if (!prevMa5 || !prevMa20) continue;
+
+  const row = data[i];
+  const price = row.close;
+
+  // 黃金交叉：買入
+  if (prevMa5 <= prevMa20 && ma5 > ma20 && account.shares === 0) {
+    const maxLots = Math.floor(account.capital / (price * LOT));
+    const buyAmount = maxLots * LOT;
+    if (buyAmount > 0 && account.buy(buyAmount, price, row.date)) {
+      print(\`📈 買入 \${row.date}｜\${buyAmount} 股 @ \${price}｜剩餘資金 \${account.capital.toFixed(0)}\`);
+    }
+  }
+  // 死亡交叉：賣出
+  else if (prevMa5 >= prevMa20 && ma5 < ma20 && account.shares > 0) {
+    const sellAmount = account.shares;
+    if (account.sell(sellAmount, price, row.date)) {
+      print(\`📉 賣出 \${row.date}｜\${sellAmount} 股 @ \${price}｜資金 \${account.capital.toFixed(0)}\`);
+    }
+  }
+}
+
+const finalCapital = account.getFinalCapital(data[data.length - 1]?.close || 0);
+print(\`\\n初始資金：\${account.initialCapital.toLocaleString()} 元\`);
+print(\`最終市值：\${finalCapital.toLocaleString()} 元\`);
+print(\`報酬率：\${((finalCapital / account.initialCapital - 1) * 100).toFixed(2)}%\`);
+print(\`交易次數：\${account.trades.length} 次\`);
+
+`;
+
+document.getElementById('editor').value = DEFAULT_CODE;
+
+// Ctrl+Enter 執行
+document.getElementById('editor').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runBacktest();
+  }
+  // Tab → 2 spaces
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ta = e.target;
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    ta.value = ta.value.substring(0, start) + '  ' + ta.value.substring(end);
+    ta.selectionStart = ta.selectionEnd = start + 2;
+  }
+});
+
+// ─────────────────────────────────────────
+// 回測程式碼 匯出 / 匯入 JS
+// ─────────────────────────────────────────
+function exportEditorJS() {
+  const code = document.getElementById('editor').value;
+  const blob = new Blob([code], { type: 'text/javascript' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `backtest-${Date.now()}.js`;
+  a.click();
+}
+
+function importEditorJS(files) {
+  if (!files || !files.length) return;
+  const file = files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('editor').value = e.target.result;
+    document.getElementById('js-import-input').value = '';
+  };
+  reader.onerror = () => alert('讀取 JS 檔案失敗');
+  reader.readAsText(file);
+}
+
+function createBacktestAccount(options = {}) {
+  let initialCapital = Number(options.initialCapital ?? 100000);
+  // 預設為台股常見費率（可由 options 或 account.setOptions() 覆寫）
+  let feeRate = Number(options.feeRate ?? 0.001425);
+  let taxRate = Number(options.taxRate ?? 0.003);
+  let minFee = Number(options.minFee ?? 20);
+  const normalizeActionDate = (actionDate) => {
+    const tradeDate = String(actionDate || '').trim();
+    const m = tradeDate.match(/^(\d{2,4})[/-](\d{1,2})[/-](\d{1,2})$/);
+    if (!m) return '';
+    const year = m[1];
+    const month = Number(m[2]);
+    const day = Number(m[3]);
+    if (month < 1 || month > 12 || day < 1) return '';
+    const adYear = year.length <= 3 ? Number(year) + 1911 : Number(year);
+    if (!Number.isFinite(adYear) || adYear <= 0) return '';
+    const maxDay = new Date(adYear, month, 0).getDate();
+    if (day > maxDay) return '';
+    return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+  };
+  const parseOrderInput = (amount, price, actionDate) => {
+    const qty = Math.floor(Number(amount));
+    const p = Number(price);
+    const tradeDate = normalizeActionDate(actionDate);
+    if (!Number.isFinite(qty) || !Number.isFinite(p) || qty <= 0 || p <= 0 || !tradeDate) return null;
+    return { qty, p, tradeDate };
+  };
+
+  const account = {
+    initialCapital,
+    capital: initialCapital,
+    shares: 0,
+    trades: [],
+    buy(amount, price, actionDate) {
+      const input = parseOrderInput(amount, price, actionDate);
+      if (!input) return false;
+      const { qty, p, tradeDate } = input;
+      const cost = qty * p;
+      const fee = Math.max(Math.round(cost * feeRate), minFee);
+      const total = cost + fee;
+      if (account.capital < total) return false;
+      account.capital -= total;
+      account.shares += qty;
+      account.trades.push({
+        date: tradeDate,
+        action: 'BUY',
+        price: p,
+        shares: qty,
+        capital: Math.round(account.capital),
+      });
+      return true;
+    },
+    sell(amount, price, actionDate) {
+      const input = parseOrderInput(amount, price, actionDate);
+      if (!input) return false;
+      const { qty, p, tradeDate } = input;
+      if (qty > account.shares) return false;
+      const revenue = qty * p;
+      const fee = Math.max(Math.round(revenue * feeRate), minFee);
+      const tax = Math.round(revenue * taxRate);
+      account.capital += (revenue - fee - tax);
+      account.shares -= qty;
+      account.trades.push({
+        date: tradeDate,
+        action: 'SELL',
+        price: p,
+        shares: qty,
+        capital: Math.round(account.capital),
+      });
+      return true;
+    },
+    setOptions(opts = {}) {
+      if (opts.feeRate !== undefined) {
+        const v = Number(opts.feeRate);
+        if (Number.isFinite(v) && v >= 0) feeRate = v;
+      }
+      if (opts.taxRate !== undefined) {
+        const v = Number(opts.taxRate);
+        if (Number.isFinite(v) && v >= 0) taxRate = v;
+      }
+      if (opts.minFee !== undefined) {
+        const v = Number(opts.minFee);
+        if (Number.isFinite(v) && v >= 0) minFee = v;
+      }
+      if (opts.initialCapital !== undefined) {
+        const newCap = Number(opts.initialCapital);
+        if (Number.isFinite(newCap) && newCap > 0) {
+          account.capital = newCap;
+          initialCapital = newCap;
+          account.initialCapital = newCap;
+        }
+      }
+      return account;
+    },
+    getFinalCapital(lastPrice = 0) {
+      const p = Number(lastPrice) || 0;
+      return Math.round(account.capital + account.shares * p);
+    },
+  };
+
+  return account;
+}
+
+// ─────────────────────────────────────────
+// 執行回測
+// ─────────────────────────────────────────
+function runBacktest() {
+  const code   = document.getElementById('editor').value;
+  const logs   = [];
+  let result   = null;
+
+  // 自訂 print / console.log
+  const print = (...args) => {
+    const line = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+    logs.push({ type: 'log', text: line });
+  };
+  const fakeConsole = {
+    log:   (...a) => print(...a),
+    warn:  (...a) => logs.push({ type: 'warn',  text: a.join(' ') }),
+    error: (...a) => logs.push({ type: 'error', text: a.join(' ') }),
+    info:  (...a) => logs.push({ type: 'info',  text: a.join(' ') }),
+  };
+  const account = createBacktestAccount();
+
+  try {
+    const fn = new Function('data', 'dataMap', 'print', 'console', 'account', code);
+    result = fn(stockData, stockDataMap, print, fakeConsole, account);
+    const userResult = result && typeof result === 'object' ? result : {};
+    const lastPrice = stockData[stockData.length - 1]?.close || 0;
+    result = {
+      ...userResult,
+      trades: Array.isArray(userResult.trades) ? userResult.trades : account.trades,
+      initialCapital: userResult.initialCapital === undefined ? account.initialCapital : userResult.initialCapital,
+      finalCapital: userResult.finalCapital === undefined ? account.getFinalCapital(lastPrice) : userResult.finalCapital,
+    };
+  } catch (err) {
+    logs.push({ type: 'error', text: `❌ 執行錯誤：${err.message}` });
+  }
+
+  renderResults(logs, result);
+}
+
+// ─────────────────────────────────────────
+// 渲染結果
+// ─────────────────────────────────────────
+function renderResults(logs, result) {
+  const card = document.getElementById('results-card');
+  const body = document.getElementById('results-body');
+  card.style.display = '';
+
+  // Console 輸出
+  const consoleHTML = logs.map(l => {
+    const cls = l.type === 'warn' ? 'log-warn' : l.type === 'error' ? 'log-error' : l.type === 'info' ? 'log-info' : 'log-line';
+    const esc = l.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="${cls}">${esc}</div>`;
+  }).join('') || '<div class="log-line" style="color:#656d76">（無輸出）</div>';
+
+  let summaryHTML = '';
+  let tradesHTML  = '';
+  let chartHTML   = '';
+
+  // 若有回傳物件，顯示績效摘要
+  if (result && typeof result === 'object') {
+    const { initialCapital = 0, finalCapital = 0, trades = [] } = result;
+    const returnPct = initialCapital ? ((finalCapital / initialCapital - 1) * 100).toFixed(2) : null;
+    const winTrades = calcWinTrades(trades);
+
+    summaryHTML = `
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="label">初始資金</div>
+          <div class="value neutral">${initialCapital.toLocaleString()}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">最終市值</div>
+          <div class="value ${finalCapital >= initialCapital ? 'up' : 'down'}">${Math.round(finalCapital).toLocaleString()}</div>
+        </div>
+        ${returnPct !== null ? `
+        <div class="summary-card">
+          <div class="label">總報酬率</div>
+          <div class="value ${parseFloat(returnPct) >= 0 ? 'up' : 'down'}">${returnPct >= 0 ? '+' : ''}${returnPct}%</div>
+        </div>` : ''}
+        <div class="summary-card">
+          <div class="label">交易次數</div>
+          <div class="value neutral">${trades.length}</div>
+        </div>
+        ${winTrades !== null ? `
+        <div class="summary-card">
+          <div class="label">勝率</div>
+          <div class="value ${winTrades.rate >= 50 ? 'up' : 'down'}">${winTrades.rate.toFixed(1)}%</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">獲利 / 虧損筆數</div>
+          <div class="value neutral">${winTrades.wins} / ${winTrades.losses}</div>
+        </div>` : ''}
+      </div>`;
+
+    // 交易紀錄
+    if (trades.length > 0) {
+      const tradeRows = trades.map(t => `
+        <tr>
+          <td>${t.date || ''}</td>
+          <td><span class="badge ${t.action === 'BUY' ? 'badge-danger' : 'badge-info'}">${t.action === 'BUY' ? '買入' : '賣出'}</span></td>
+          <td>${fmt(t.price)}</td>
+          <td>${(t.shares || 0).toLocaleString()}</td>
+          <td>${t.capital !== undefined ? Math.round(t.capital).toLocaleString() : '-'}</td>
+        </tr>`).join('');
+      tradesHTML = `
+        <div class="separator"></div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:8px;">交易紀錄</div>
+        <div class="table-wrap" style="max-height:240px;">
+          <table>
+            <thead><tr><th>日期</th><th>動作</th><th>成交價</th><th>股數</th><th>剩餘資金</th></tr></thead>
+            <tbody>${tradeRows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    // Canvas 走勢圖
+    chartHTML = `
+      <div class="separator"></div>
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px;">走勢圖</div>
+      <div id="chart-wrap">
+        <canvas id="backtest-chart" height="240"></canvas>
+        <div class="chart-legend">
+          <span><span class="legend-dot" style="background:#0969da"></span>收盤價（標準化）</span>
+          <span><span class="legend-dot" style="background:#1a7f37"></span>資金曲線（標準化）</span>
+          <span><span class="legend-dot" style="background:#cf222e"></span>買入</span>
+          <span><span class="legend-dot" style="background:#0550ae"></span>賣出</span>
+        </div>
+      </div>`;
+  }
+
+  body.innerHTML = `
+    ${summaryHTML}
+    <div class="separator"></div>
+    <div style="font-weight:600;font-size:13px;margin-bottom:6px;">Console 輸出</div>
+    <div id="console-output">${consoleHTML}</div>
+    ${tradesHTML}
+    ${chartHTML}
+  `;
+
+  // 畫圖（Canvas 必須在 DOM 插入後才能取得）
+  if (result && result.trades) {
+    requestAnimationFrame(() => drawChart(result.trades, result.initialCapital));
+  }
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// 計算勝率（從配對的 BUY/SELL 中算）
+function calcWinTrades(trades) {
+  const buys = trades.filter(t => t.action === 'BUY');
+  const sells = trades.filter(t => t.action === 'SELL');
+  if (buys.length === 0 || sells.length === 0) return null;
+  const pairs = Math.min(buys.length, sells.length);
+  let wins = 0, losses = 0;
+  for (let i = 0; i < pairs; i++) {
+    if (sells[i].price > buys[i].price) wins++;
+    else losses++;
+  }
+  return { wins, losses, rate: (wins / pairs) * 100 };
+}
+
+// ─────────────────────────────────────────
+// Canvas 走勢圖
+// ─────────────────────────────────────────
+function drawChart(trades, initialCapital) {
+  const canvas = document.getElementById('backtest-chart');
+  if (!canvas || !stockData.length) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth;
+  const H = 240;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const PAD = { top: 16, right: 16, bottom: 28, left: 16 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  // 收盤價序列
+  const closes = stockData.map(d => d.close);
+
+  // 建立資金曲線（每個交易日的持倉市值 + 現金）
+  const equityCurve = buildEquityCurve(trades, initialCapital);
+
+  // 標準化到 [0, 1]
+  const normalize = arr => {
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    const range = max - min || 1;
+    return arr.map(v => (v - min) / range);
+  };
+  const normClose  = normalize(closes);
+  const normEquity = normalize(equityCurve);
+
+  // x 位置
+  const xOf = i => PAD.left + (i / (stockData.length - 1)) * cW;
+  const yOf = v => PAD.top + (1 - v) * cH;
+
+  // 背景格線
+  ctx.strokeStyle = '#e1e4e8';
+  ctx.lineWidth = 0.5;
+  [0.25, 0.5, 0.75].forEach(v => {
+    ctx.beginPath();
+    ctx.moveTo(PAD.left, yOf(v));
+    ctx.lineTo(PAD.left + cW, yOf(v));
+    ctx.stroke();
+  });
+
+  // 收盤價曲線
+  drawLine(ctx, normClose.map((v, i) => [xOf(i), yOf(v)]), '#0969da', 1.5);
+  // 資金曲線
+  drawLine(ctx, normEquity.map((v, i) => [xOf(i), yOf(v)]), '#1a7f37', 2);
+
+  // 交易標記
+  trades.forEach(t => {
+    const idx = stockData.findIndex(d => d.date === t.date);
+    if (idx < 0) return;
+    const x = xOf(idx);
+    const y = yOf(normClose[idx]);
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = t.action === 'BUY' ? '#cf222e' : '#0550ae';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+
+  // X 軸日期標籤
+  ctx.fillStyle = '#656d76';
+  ctx.font = `10px -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  const labelCount = Math.min(8, stockData.length);
+  const step = Math.floor(stockData.length / labelCount);
+  for (let i = 0; i < stockData.length; i += step) {
+    ctx.fillText(stockData[i].date, xOf(i), H - 6);
+  }
+}
+
+function drawLine(ctx, points, color, width) {
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineJoin = 'round';
+  points.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+  ctx.stroke();
+}
+
+// 建立每日資金曲線
+function buildEquityCurve(trades, initialCapital) {
+  let capital = initialCapital;
+  let shares  = 0;
+  let tradeIdx = 0;
+  const sorted = [...trades].sort((a, b) => a.date < b.date ? -1 : 1);
+
+  return stockData.map(d => {
+    // 處理當日交易
+    while (tradeIdx < sorted.length && sorted[tradeIdx].date === d.date) {
+      const t = sorted[tradeIdx];
+      if (t.capital !== undefined) {
+        capital = t.capital;
+      }
+      const qty = t.shares || 0;
+      if (t.action === 'BUY') shares += qty;
+      else if (t.action === 'SELL') shares = Math.max(0, shares - qty);
+      tradeIdx++;
+    }
+    return capital + shares * d.close;
+  });
+}
+</script>
+</body>
+</html>

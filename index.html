@@ -1,20 +1,116 @@
-<!doctype html>
-<html lang="zh-Hant">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>a-gin-the-cat demo</title>
-  </head>
-  <body>
-    <main>
-      <h1>a-gin-the-cat demo</h1>
-      <p>這個 GitHub Pages 站台由來源 repo 自動更新。</p>
-      <p>
-        Source:
-        <a href="https://github.com/unzan401/a-gin-the-cat">
-          unzan401/a-gin-the-cat
-        </a>
-      </p>
-    </main>
-  </body>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GinCat Public Pages</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-alt: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --primary: #2f81f7;
+      --primary-hover: #1f6feb;
+      --radius: 16px;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0%, var(--bg) 48%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 64px 0 80px;
+    }
+    .hero {
+      margin-bottom: 28px;
+    }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 16px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      background: rgba(255,255,255,0.02);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(34px, 7vw, 52px);
+      line-height: 1.1;
+    }
+    .lead {
+      margin: 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-top: 36px;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .link:hover {
+      background: var(--primary-hover);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">🐱 GinCat Public</div>
+      <h1>GinCat 的公開頁面</h1>
+      <p class="lead">這裡是這個 repo 對外 deploy 的首頁。之後各種工具、展示頁或實驗頁面，都可以放在 <code>public/</code> 下面各自的路徑。</p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>台股回測工具</h2>
+        <p>查詢台股月資料、撰寫策略、執行回測與檢視績效結果。</p>
+        <a class="link" href="tools/stock-backtest.html">前往工具</a>
+      </article>
+    </section>
+  </main>
+</body>
 </html>
