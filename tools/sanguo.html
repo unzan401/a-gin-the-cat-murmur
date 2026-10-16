@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三國志 — 網頁戰略</title>
+<style>
+/* ─────────── Reset & Variables ─────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;
+  --text:#e6edf3;--muted:#8b949e;--radius:10px;
+  --faction1:#4a90d9;
+  --gold:#f0c040;--hp:#e05252;--food:#6cbb6c;--troop:#7ab8f5;
+  --topbar-h:52px;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent}
+button{cursor:pointer;border:none;border-radius:6px;font-size:14px;padding:0 14px;height:44px;line-height:44px;transition:filter .15s;touch-action:manipulation}
+button:active:not(:disabled){filter:brightness(1.2)}
+button:disabled{opacity:.4;cursor:not-allowed}
+select,input[type=range]{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:14px;height:44px}
+h2{font-size:16px;margin-bottom:8px}
+h3{font-size:13px;color:var(--muted);margin-bottom:4px;margin-top:10px}
+
+/* ═══════════════════════════════
+   MOBILE-FIRST LAYOUT
+   ─ Topbar (fixed top)
+   ─ Map area (fills remaining height)
+   ─ Bottom sheet (slide-up panel)
+   ─ Log bar (hidden on mobile, shown on desktop)
+═══════════════════════════════ */
+
+/* Topbar — fixed, full width */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  height:var(--topbar-h);
+  display:flex;align-items:center;gap:8px;
+  padding:0 12px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+#topbar .title{font-size:18px;font-weight:700;letter-spacing:.05em;color:var(--gold);white-space:nowrap}
+#topbar .faction-badge{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+#phase-info{font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#surrender-btn{flex-shrink:0;padding:0 12px;height:36px;line-height:36px;background:#e05252;color:#fff;font-weight:600;font-size:13px;border-radius:8px}
+#global-res{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.res-chip{display:flex;align-items:center;gap:2px;font-size:12px}
+.res-chip .val{font-weight:700;font-size:13px}
+#end-turn-btn{flex-shrink:0;padding:0 12px;height:36px;line-height:36px;background:#2f81f7;color:#fff;font-weight:600;font-size:13px;border-radius:8px}
+
+/* App wrapper — single column, full screen */
+#app{display:flex;flex-direction:column;height:100vh;padding-top:var(--topbar-h)}
+#app.hidden{display:none}
+
+/* Map area — fills available height above bottom sheet */
+#map-area{
+  flex:1;
+  position:relative;
+  overflow:scroll;
+  overflow-x:auto;
+  overflow-y:auto;
+  background:#0a0f1a;
+  /* reserve space for bottom sheet handle */
+  padding-bottom:56px;
+  cursor:grab;
+  -webkit-overflow-scrolling:touch;
+}
+#map-area.panning{cursor:grabbing}
+#map-svg{width:1600px;height:1120px;display:block;touch-action:none}
+
+/* Log bar — hidden on mobile (shown via log panel) */
+#log-bar{display:none}
+
+/* ─────────── Mobile Log Panel ─────────── */
+#log-fab{
+  position:fixed;bottom:64px;right:14px;z-index:45;
+  width:48px;height:48px;border-radius:50%;
+  background:#2f81f7;color:#fff;font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+  border:none;line-height:1;padding:0;
+}
+#log-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:60;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  border-radius:16px 16px 0 0;
+  max-height:60vh;
+  display:flex;flex-direction:column;
+  transform:translateY(100%);
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+}
+#log-panel.open{transform:translateY(0)}
+#log-panel-head{
+  flex-shrink:0;
+  height:48px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;
+  border-bottom:1px solid var(--border);
+  font-weight:600;font-size:14px;
+}
+#log-panel-body{flex:1;overflow-y:auto;padding:8px 14px 20px;font-size:12px;color:var(--muted);-webkit-overflow-scrolling:touch}
+#log-panel-body div{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+
+/* ─────────── Bottom Sheet (city panel) ─────────── */
+#sidebar{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:40;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  border-radius:16px 16px 0 0;
+  display:flex;
+  flex-direction:column;
+  max-height:72vh;
+  transform:translateY(calc(100% - 56px)); /* show only handle */
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+}
+#sidebar.open{transform:translateY(0)}
+
+/* Drag handle */
+#sheet-handle{
+  flex-shrink:0;
+  height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;
+  cursor:pointer;
+  touch-action:none;
+  user-select:none;
+}
+#sheet-handle::before{
+  content:'';
+  position:absolute;
+  left:50%;transform:translateX(-50%);
+  top:8px;
+  width:36px;height:4px;
+  background:var(--border);
+  border-radius:2px;
+}
+#sheet-title{font-size:15px;font-weight:700;color:var(--gold)}
+#sheet-close{background:var(--surface2);color:var(--muted);height:32px;line-height:32px;padding:0 10px;font-size:12px;border:1px solid var(--border)}
+
+#city-panel{flex:1;overflow-y:auto;padding:4px 14px 24px;-webkit-overflow-scrolling:touch}
+#city-panel h2{color:var(--gold)}
+
+/* ─────────── City panel content ─────────── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:13px;margin-bottom:10px}
+.stat-row{display:flex;justify-content:space-between;padding:3px 0}
+.stat-val{font-weight:600}
+.actions{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.actions button{
+  text-align:left;
+  height:48px;line-height:48px;
+  padding:0 14px;
+  background:var(--surface2);
+  color:var(--text);
+  border:1px solid var(--border);
+  font-size:13px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.actions button span{color:var(--muted);font-size:12px}
+
+/* ─────────── Officer card ─────────── */
+.officer-list{display:flex;flex-direction:column;gap:6px}
+.officer-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;overflow:hidden}
+.officer-card .name{font-weight:700;font-size:14px}
+.officer-card .stats{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;max-width:100%}
+.stat-tag{padding:2px 6px;border-radius:999px;font-size:11px;white-space:nowrap}
+
+/* ─────────── Map city touch targets ─────────── */
+.city-group{cursor:pointer}
+.city-touch{fill:transparent;stroke:none} /* invisible but tappable */
+.city-label{font-size:12px;fill:#e6edf3;text-anchor:middle;pointer-events:none;font-weight:700}
+.city-pop{font-size:12px;fill:#8b949e;text-anchor:middle;pointer-events:none}
+.city-selected .city-bg{stroke:#f0c040 !important;stroke-width:3 !important}
+
+/* ─────────── Modal ─────────── */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;z-index:100;padding:0}
+#modal-overlay.hidden{display:none}
+#modal{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px 16px 0 0;
+  padding:24px 20px 32px;
+  width:100%;
+  max-height:85vh;
+  overflow-y:auto;
+}
+#modal h2{margin-bottom:14px;font-size:18px}
+#modal .btn-row{display:flex;gap:10px;margin-top:18px}
+#modal .btn-row button{flex:1;height:48px;line-height:48px;font-size:14px}
+.btn-confirm{background:#2f81f7;color:#fff}
+.btn-cancel{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+input[type=range]{width:100%;height:36px;margin:6px 0}
+
+/* ─────────── Start screen ─────────── */
+#start-screen{
+  position:relative;
+  inset:0;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:200;
+  gap:16px;
+  padding:24px 16px;
+  overflow-y:auto;
+}
+#start-screen h1{font-size:clamp(28px,8vw,52px);color:var(--gold);letter-spacing:.08em;text-shadow:0 0 40px rgba(240,192,64,.3);text-align:center}
+#start-screen p{color:var(--muted);max-width:480px;text-align:center;line-height:1.7;font-size:14px}
+.faction-select{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;max-width:600px}
+@media(max-width:480px){.faction-select{grid-template-columns:1fr 1fr}}
+.faction-btn{
+  padding:14px 12px;
+  border-radius:12px;
+  border:2px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  font-size:13px;font-weight:600;
+  transition:all .2s;text-align:left;
+  height:auto;line-height:1.4;
+}
+.faction-btn:active{transform:scale(.97)}
+.faction-btn .flag{font-size:22px;display:block;margin-bottom:6px}
+.faction-btn .desc{font-size:11px;color:var(--muted);font-weight:400;margin-top:4px;display:block}
+.faction-btn[data-f]{border-color:var(--border)}
+
+/* ─────────── Win/lose overlay ─────────── */
+#result-screen{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;gap:16px;padding:24px}
+#result-screen.hidden{display:none}
+#result-screen h2{font-size:clamp(36px,10vw,56px)}
+#result-screen p{color:var(--muted);font-size:15px;text-align:center}
+#result-screen button{padding:0 32px;height:52px;line-height:52px;background:#2f81f7;color:#fff;font-size:16px;border-radius:10px}
+
+/* ─────────── Battle animation ─────────── */
+.flash{animation:flash .3s ease-out}
+@keyframes flash{0%{filter:brightness(3)}100%{filter:brightness(1)}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ═══════════════════════════════
+   DESKTOP (≥640px) — restore side-by-side layout
+═══════════════════════════════ */
+@media(min-width:640px){
+  :root{--topbar-h:48px}
+  #app{display:grid;grid-template-columns:1fr 320px;grid-template-rows:1fr auto;padding-top:var(--topbar-h)}
+  #topbar{gap:14px}
+  #topbar .title{font-size:20px}
+  #phase-info{font-size:12px}
+  #end-turn-btn{height:36px;line-height:36px}
+
+  #map-area{padding-bottom:0;overflow:auto;cursor:grab}
+  #map-area.panning{cursor:grabbing}
+
+  /* Restore sidebar as right panel — fixed height = full viewport minus topbar */
+  #sidebar{
+    position:sticky;
+    top:var(--topbar-h);
+    transform:none !important;
+    border-radius:0;
+    border-top:none;
+    border-left:1px solid var(--border);
+    max-height:none;
+    height:calc(100vh - var(--topbar-h));
+    overflow:hidden;
+    transition:none;
+    display:flex;
+    flex-direction:column;
+  }
+  #sheet-handle{display:none}
+  #city-panel{padding:12px 14px 16px}
+
+  /* Restore log bar */
+  #log-bar{
+    display:block;
+    grid-column:1/-1;
+    background:var(--surface2);
+    border-top:1px solid var(--border);
+    padding:6px 16px;
+    font-size:12px;
+    color:var(--muted);
+    height:80px;
+    min-height:80px;
+    flex-shrink:0;
+    overflow-y:auto;
+    position:absolute;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:100;
+  }
+
+  /* Hide mobile-only log UI on desktop */
+  #log-fab{display:none}
+  #log-panel{display:none}
+
+  /* Modal as centered dialog on desktop */
+  #modal-overlay{align-items:center;padding:0}
+  #modal{border-radius:14px;max-width:480px;width:90%;max-height:90vh}
+  #modal .btn-row button{flex:none;width:auto;padding:0 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- Start Screen -->
+<div id="start-screen">
+  <h1>⚔ 三國志</h1>
+  <p>漢末亂世，群雄並起。選擇你的諸侯，逐鹿天下！</p>
+  <div id="faction-select-grid" class="faction-select"></div>
+</div>
+
+<!-- Fixed Topbar (all screen sizes) -->
+<div id="topbar">
+  <span class="title">⚔ 三國志</span>
+  <span id="faction-badge" class="faction-badge"></span>
+  <span id="phase-info"></span>
+  <button id="surrender-btn">投降 ⚔</button>
+  <div id="global-res">
+    <div class="res-chip">💰<span id="res-gold" class="val">0</span></div>
+    <div class="res-chip">🌾<span id="res-food" class="val">0</span></div>
+    <div class="res-chip">⚔<span id="res-troop" class="val">0</span></div>
+  </div>
+  <button id="end-turn-btn">結束 ▶</button>
+</div>
+
+<!-- Main App -->
+<div id="app" class="hidden">
+  <!-- Map -->
+  <div id="map-area">
+    <svg id="map-svg" viewBox="0 0 1400 1020" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+  <!-- Bottom Sheet / Sidebar -->
+  <div id="sidebar">
+    <div id="sheet-handle" onclick="toggleSheet()">
+      <span id="sheet-title">點擊城市查看詳情</span>
+      <button id="sheet-close" onclick="event.stopPropagation();closeSheet()">✕ 關閉</button>
+    </div>
+    <div id="city-panel"></div>
+  </div>
+
+  <!-- Log Bar (desktop only) -->
+  <div id="log-bar"></div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay" class="hidden">
+  <div id="modal">
+    <h2 id="modal-title"></h2>
+    <div id="modal-body"></div>
+    <div class="btn-row">
+      <button class="btn-cancel" id="modal-cancel">取消</button>
+      <button class="btn-confirm" id="modal-confirm">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- Result Screen -->
+<div id="result-screen" class="hidden">
+  <h2 id="result-emoji">🎉</h2>
+  <h3 id="result-title" style="font-size:24px;color:var(--gold)"></h3>
+  <p id="result-desc"></p>
+  <button onclick="location.reload()">重新開始</button>
+</div>
+
+<!-- Mobile Log FAB -->
+<button id="log-fab" onclick="toggleLogPanel()" title="查看記錄">📜</button>
+
+<!-- Mobile Log Panel -->
+<div id="log-panel">
+  <div id="log-panel-head">
+    📜 戰報記錄
+    <button onclick="toggleLogPanel()" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);height:30px;line-height:30px;padding:0 10px;font-size:12px">關閉</button>
+  </div>
+  <div id="log-panel-body"></div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   DATA — Cities, Officers, Factions
+════════════════════════════════════════════════════════════ */
+// 24 諸侯勢力 — 各自持有歷史起始城，顏色以色相均分
+const FACTIONS = {
+  gongsundao: {name:'公孫度',leader:'公孫度',color:'#8ecae6',cities:['xiangping'],                     startCity:'xiangping'},
+  gongsunzan: {name:'公孫瓚',leader:'公孫瓚',color:'#a8dadc',cities:['beiping'],                        startCity:'beiping'},
+  liuyu:      {name:'劉虞',  leader:'劉虞',  color:'#457b9d',cities:['ji'],                             startCity:'ji'},
+  yuanshao:   {name:'袁紹',  leader:'袁紹',  color:'#1d3557',cities:['ye'],                             startCity:'ye'},
+  hanfu:      {name:'韓馥',  leader:'韓馥',  color:'#264653',cities:['shangtang'],                      startCity:'shangtang'},
+  liubei:     {name:'劉備',  leader:'劉備',  color:'#4caf50',cities:['xiaopei'],                        startCity:'xiaopei'},
+  kongrong:   {name:'孔融',  leader:'孔融',  color:'#80b918',cities:['beihai'],                         startCity:'beihai'},
+  baoxin:     {name:'鮑信',  leader:'鮑信',  color:'#99d98c',cities:['jinan'],                          startCity:'jinan'},
+  zhangyan:   {name:'張燕',  leader:'張燕',  color:'#52796f',cities:['jinyang'],                        startCity:'jinyang'},
+  zhangyang:  {name:'張楊',  leader:'張楊',  color:'#2d6a4f',cities:['nanpi'],                          startCity:'nanpi'},
+  taoquian:   {name:'陶謙',  leader:'陶謙',  color:'#40916c',cities:['xiapi'],                          startCity:'xiapi'},
+  liudai:     {name:'劉岱',  leader:'劉岱',  color:'#b7e4c7',cities:['puyang'],                         startCity:'puyang'},
+  caocao:     {name:'曹操',  leader:'曹操',  color:'#4a90d9',cities:['xuchang'],                        startCity:'xuchang'},
+  sunjian:    {name:'孫堅',  leader:'孫堅',  color:'#e07c39',cities:['moling'],                         startCity:'moling'},
+  kongzhou:   {name:'孔伷',  leader:'孔伷',  color:'#e9c46a',cities:['runan'],                          startCity:'runan'},
+  heyi:       {name:'何儀',  leader:'何儀',  color:'#f4a261',cities:['qiao'],                           startCity:'qiao'},
+  dongzhuo:   {name:'董卓',  leader:'董卓',  color:'#e63946',cities:['changan','hongnong','luoyang','tianshui'], startCity:'changan'},
+  mateng:     {name:'馬騰',  leader:'馬騰',  color:'#d62828',cities:['wuwei'],                          startCity:'wuwei'},
+  zhangchao:  {name:'張超',  leader:'張超',  color:'#f77f00',cities:['guangling'],                      startCity:'guangling'},
+  zhanglu:    {name:'張魯',  leader:'張魯',  color:'#fcbf49',cities:['hanzhong'],                       startCity:'hanzhong'},
+  liuyan:     {name:'劉焉',  leader:'劉焉',  color:'#eae2b7',cities:['chengdu'],                        startCity:'chengdu'},
+  yuanshu:    {name:'袁術',  leader:'袁術',  color:'#9d4edd',cities:['shouchun'],                       startCity:'shouchun'},
+  liubiao:    {name:'劉表',  leader:'劉表',  color:'#7b2d8b',cities:['xiangyang'],                      startCity:'xiangyang'},
+  shixie:     {name:'士燮',  leader:'士燮',  color:'#c77dff',cities:['jiaozhi'],                        startCity:'jiaozhi'},
+};
+
+
+// Map: viewBox 1600×1120 — 城池座標微調
+const CITY_DEF = [
+  // ── 西北 涼州
+  {id:'wuwei',    name:'武威',  x: 106,y:130, pop:4, fertile:3,defBase:35,region:'涼州'},
+  {id:'xiping',   name:'西平',  x: 170,y:250, pop:4, fertile:4,defBase:35,region:'涼州'},
+  // ── 西北 雍州
+  {id:'tianshui', name:'天水',  x: 306,y:290, pop:5, fertile:5,defBase:45,region:'雍州'},
+  {id:'changan',  name:'長安',  x: 466,y:334, pop:9, fertile:7,defBase:80,region:'雍州'},
+  // ── 巴蜀 益州
+  {id:'wudu',     name:'武都',  x: 350,y:410, pop:4, fertile:5,defBase:40,region:'益州'},
+  {id:'hanzhong', name:'漢中',  x: 486,y:490, pop:6, fertile:6,defBase:60,region:'益州'},
+  {id:'zitong',   name:'梓潼',  x: 340,y:560, pop:6, fertile:7,defBase:50,region:'益州'},
+  {id:'chengdu',  name:'成都',  x: 266,y:664, pop:10,fertile:10,defBase:80,region:'益州'},
+  {id:'jiangzhou',name:'江州',  x: 426,y:670, pop:7, fertile:8,defBase:55,region:'益州'},
+  {id:'yongan',   name:'永安',  x: 566,y:644, pop:5, fertile:6,defBase:50,region:'益州'},
+  // ── 巴蜀 南中
+  {id:'yongchang',name:'永昌',  x: 214,y:804, pop:3, fertile:5,defBase:28,region:'南中'},
+  {id:'jianning', name:'建寧',  x: 326,y:824, pop:3, fertile:5,defBase:28,region:'南中'},
+  {id:'yunnan',   name:'雲南',  x: 250,y:876, pop:3, fertile:5,defBase:25,region:'南中'},
+  // ── 中原 司隸
+  {id:'hongnong', name:'弘農',  x: 600,y:324, pop:6, fertile:6,defBase:50,region:'司隸'},
+  {id:'luoyang',  name:'洛陽',  x: 730,y:294, pop:10,fertile:7,defBase:85,region:'司隸'},
+  // ── 中原 豫州
+  {id:'qiao',     name:'譙',    x: 916,y:400, pop:6, fertile:7,defBase:42,region:'豫州'},
+  {id:'xuchang',  name:'許昌',  x: 826,y:396, pop:9, fertile:7,defBase:65,region:'豫州'},
+  {id:'runan',    name:'汝南',  x: 866,y:470, pop:7, fertile:7,defBase:48,region:'豫州'},
+  // ── 中原 兗州
+  {id:'puyang',   name:'濮陽',  x: 916,y:280, pop:7, fertile:7,defBase:50,region:'兗州'},
+  {id:'chenliu',  name:'陳留',  x: 836,y:300, pop:7, fertile:7,defBase:48,region:'兗州'},
+  // ── 中原 徐州
+  {id:'xiaopei',  name:'小沛',  x: 986,y:356, pop:6, fertile:7,defBase:45,region:'徐州'},
+  {id:'xiapi',    name:'下邳',  x:1086,y:330, pop:7, fertile:7,defBase:50,region:'徐州'},
+  // ── 中原 青州
+  {id:'beihai',   name:'北海',  x:1106,y:236, pop:5, fertile:6,defBase:38,region:'青州'},
+  {id:'jinan',    name:'濟南',  x: 996,y:260, pop:5, fertile:6,defBase:38,region:'青州'},
+  // ── 河北 冀州
+  {id:'nanpi',    name:'南皮',  x: 910,y:156, pop:8, fertile:8,defBase:58,region:'冀州'},
+  {id:'pingyuan', name:'平原',  x: 1000,y:186, pop:6, fertile:7,defBase:45,region:'冀州'},
+  {id:'ye',       name:'鄴',    x: 826,y:210, pop:9, fertile:8,defBase:70,region:'冀州'},
+  // ── 河北 并州
+  {id:'shangtang',name:'上黨',  x: 726,y:200, pop:5, fertile:5,defBase:42,region:'并州'},
+  {id:'jinyang',  name:'晉陽',  x: 746,y:110, pop:7, fertile:5,defBase:55,region:'并州'},
+  // ── 河北 幽州
+  {id:'ji',       name:'薊',    x: 906,y:80,  pop:7, fertile:6,defBase:55,region:'幽州'},
+  {id:'beiping',  name:'北平',  x:1010,y:80,  pop:6, fertile:5,defBase:48,region:'幽州'},
+  {id:'xiangping',name:'襄平',  x:1140,y:60,  pop:5, fertile:4,defBase:42,region:'幽州'},
+  // ── 荊楚 荊北
+  {id:'wan',      name:'宛',    x: 736,y:404, pop:7, fertile:7,defBase:52,region:'荊北'},
+  {id:'shangyong',name:'上庸',  x: 586,y:510, pop:5, fertile:6,defBase:45,region:'荊北'},
+  {id:'xiangyang',name:'襄陽',  x: 726,y:544, pop:8, fertile:8,defBase:68,region:'荊北'},
+  {id:'xinye',    name:'新野',  x: 730,y:474, pop:5, fertile:7,defBase:40,region:'荊北'},
+  {id:'jiangxia', name:'江夏',  x: 836,y:554, pop:6, fertile:7,defBase:50,region:'荊北'},
+  // ── 荊楚 荊南
+  {id:'jiangling',name:'江陵',  x: 720,y:640, pop:7, fertile:8,defBase:58,region:'荊南'},
+  {id:'wuling',   name:'武陵',  x: 660,y:690, pop:5, fertile:6,defBase:38,region:'荊南'},
+  {id:'changsha', name:'長沙',  x: 800,y:704, pop:7, fertile:8,defBase:52,region:'荊南'},
+  {id:'guiyang',  name:'桂陽',  x: 816,y:794, pop:5, fertile:6,defBase:38,region:'荊南'},
+  {id:'lingling', name:'零陵',  x: 670,y:784, pop:5, fertile:6,defBase:38,region:'荊南'},
+  // ── 吳越 淮南
+  {id:'shouchun', name:'壽春',  x: 946,y:470, pop:8, fertile:7,defBase:62,region:'淮南'},
+  {id:'guangling',name:'廣陵',  x:1046,y:450, pop:6, fertile:7,defBase:48,region:'淮南'},
+  {id:'lujiang',  name:'廬江',  x: 976,y:550, pop:6, fertile:7,defBase:48,region:'淮南'},
+  // ── 吳越 揚州
+  {id:'moling',   name:'秣陵',  x:1050,y:530, pop:9, fertile:8,defBase:72,region:'揚州'},
+  {id:'wu',       name:'吳',    x:1160,y:510, pop:7, fertile:7,defBase:58,region:'揚州'},
+  {id:'kuaiji',   name:'會稽',  x:1126,y:590, pop:6, fertile:6,defBase:48,region:'揚州'},
+  {id:'poyang',   name:'鄱陽',  x: 990,y:650, pop:6, fertile:7,defBase:45,region:'揚州'},
+  {id:'chaisang', name:'柴桑',  x: 880,y:620, pop:6, fertile:7,defBase:48,region:'揚州'},
+  // ── 吳越 交州
+  {id:'jiaozhi',  name:'交趾',  x: 760,y:890, pop:3, fertile:5,defBase:25,region:'交州'},
+];
+// Adjacency list (bidirectional)
+const EDGES = [
+  // 涼州內
+  ['wuwei','xiping'],
+  // 涼州↔雍州
+  ['xiping','tianshui'],['wuwei','tianshui'],
+  ['tianshui','changan'],['tianshui','wudu'],
+  // 雍州↔司隸
+  ['changan','hongnong'],
+  // 雍州↔荊北
+  ['changan','wan'],
+  // 雍州↔益州
+  ['changan','hanzhong'],
+  // 益州 西北群
+  ['wudu','hanzhong'],
+  ['hanzhong','zitong'],
+  // 益州 南北
+  ['zitong','chengdu'],['zitong','jiangzhou'],
+  ['chengdu','jiangzhou'],
+  ['jiangzhou','yongan'],
+  // 益州↔荊北
+  ['hanzhong','shangyong'],
+  // 南中
+  ['chengdu','yongchang'],['chengdu','jianning'],
+  ['yongchang','yunnan'],['jianning','yunnan'],
+  // 南中↔交州
+  ['jianning','jiaozhi'],
+  // 荊南↔交州
+  ['guiyang','jiaozhi'],
+  // 揚州↔交州
+  ['kuaiji','jiaozhi'],
+  // 司隸↔豫州/兗州
+  ['hongnong','luoyang'],
+  ['luoyang','xuchang'],['luoyang','shangtang'],['luoyang','wan'],
+  // 豫州
+  ['xuchang','chenliu'],['xuchang','runan'],['xuchang','qiao'],['xuchang','wan'],
+  ['runan','wan'],['runan','xiangyang'],['runan','shouchun'],['runan','qiao'],['runan','xinye'],
+  // 兗州
+  ['puyang','chenliu'],['puyang','ye'],['puyang','xiaopei'],['puyang','jinan'],
+  ['chenliu','xuchang'],['chenliu','xiaopei'],['chenliu','luoyang'],
+  // 徐州
+  ['xiaopei','xiapi'],['xiaopei','qiao'],
+  ['xiapi','guangling'],
+  // 青州
+  ['beihai','jinan'],['beihai','xiapi'],
+  ['jinan','pingyuan'],
+  // 冀州
+  ['nanpi','pingyuan'],['nanpi','ji'],['nanpi','ye'],
+  ['pingyuan','ye'],
+  ['ye','shangtang'],['ye','chenliu'],
+  // 并州
+  ['shangtang','jinyang'],['shangtang','luoyang'],
+  ['jinyang','ji'],
+  // 幽州
+  ['ji','beiping'],['beiping','xiangping'],['beiping','nanpi'],
+  // 荊北
+  ['wan','xinye'],
+  ['shangyong','xiangyang'],['shangyong','xinye'],
+  ['xinye','xiangyang'],
+  ['xiangyang','jiangxia'],['xiangyang','jiangling'],
+  // 荊北↔淮南
+  ['jiangxia','lujiang'],
+  // 荊南
+  ['jiangxia','jiangling'],
+  ['jiangling','wuling'],['changsha','wuling'],['jiangling','yongan'],
+  ['wuling','lingling'],
+  ['changsha','lingling'],['guiyang','lingling'],['changsha','guiyang'],
+  // 荊南↔揚州
+  ['chaisang','poyang'],['chaisang','jiangling'],
+  // 淮南
+  ['shouchun','guangling'],['shouchun','lujiang'],['shouchun','moling'],['chaisang','lujiang'],
+  ['guangling','xiapi'],['guangling','moling'],
+  ['lujiang','moling'],['lujiang','poyang'],
+  // 揚州
+  ['moling','wu'],['moling','poyang'],
+  ['wu','kuaiji'],
+  ['poyang','chaisang'],
+];
+
+const OFFICER_POOL = [
+  // 曹操勢力
+  {id:'caocao',    name:'曹操',  f:'caocao',   cmd:98,force:72,intel:96,pol:96,cha:94},
+  {id:'xiahou',    name:'夏侯惇',f:'caocao',   cmd:88,force:94,intel:58,pol:52,cha:70},
+  {id:'zhanghe',   name:'張郃',  f:'caocao',   cmd:87,force:85,intel:76,pol:60,cha:72},
+  {id:'xunyu',     name:'荀彧',  f:'caocao',   cmd:68,force:35,intel:97,pol:96,cha:90},
+  {id:'simayi',    name:'司馬懿',f:'caocao',   cmd:92,force:55,intel:98,pol:90,cha:85},
+  {id:'dianwei',   name:'典韋',  f:'caocao',   cmd:70,force:97,intel:40,pol:30,cha:60},
+  // 劉備勢力
+  {id:'liubei',    name:'劉備',  f:'liubei',   cmd:75,force:60,intel:70,pol:90,cha:98},
+  {id:'guanyu',    name:'關羽',  f:'liubei',   cmd:95,force:97,intel:72,pol:60,cha:88},
+  {id:'zhangfei',  name:'張飛',  f:'liubei',   cmd:80,force:98,intel:42,pol:40,cha:72},
+  {id:'zhugeliang',name:'諸葛亮',f:'liubei',   cmd:90,force:30,intel:100,pol:98,cha:95},
+  {id:'zhaoyun',   name:'趙雲',  f:'liubei',   cmd:90,force:96,intel:78,pol:68,cha:90},
+  // 孫堅勢力
+  {id:'sunjian',   name:'孫堅',  f:'sunjian',  cmd:92,force:90,intel:70,pol:72,cha:85},
+  {id:'zhouyu',    name:'周瑜',  f:'sunjian',  cmd:94,force:68,intel:98,pol:80,cha:92},
+  {id:'lv_meng',   name:'呂蒙',  f:'sunjian',  cmd:88,force:80,intel:92,pol:70,cha:78},
+  {id:'ganxing',   name:'甘寧',  f:'sunjian',  cmd:82,force:92,intel:60,pol:50,cha:74},
+  {id:'lusu',      name:'魯肅',  f:'sunjian',  cmd:70,force:48,intel:93,pol:92,cha:86},
+  // 袁紹勢力
+  {id:'yuanshao',  name:'袁紹',  f:'yuanshao', cmd:80,force:50,intel:60,pol:75,cha:85},
+  {id:'yanjun',    name:'顏良',  f:'yuanshao', cmd:82,force:96,intel:42,pol:35,cha:65},
+  {id:'wenchuo',   name:'文醜',  f:'yuanshao', cmd:80,force:95,intel:40,pol:32,cha:62},
+  // 董卓勢力
+  {id:'dongzhuo',  name:'董卓',  f:'dongzhuo', cmd:70,force:80,intel:50,pol:40,cha:55},
+  {id:'lvbu',      name:'呂布',  f:'dongzhuo', cmd:78,force:100,intel:52,pol:30,cha:70},
+  {id:'liuru',     name:'李儒',  f:'dongzhuo', cmd:55,force:30,intel:90,pol:80,cha:60},
+  // 馬騰勢力
+  {id:'mateng',    name:'馬騰',  f:'mateng',   cmd:82,force:88,intel:62,pol:58,cha:72},
+  {id:'machao',    name:'馬超',  f:'mateng',   cmd:84,force:96,intel:62,pol:50,cha:80},
+  // 劉焉勢力
+  {id:'liuyan',    name:'劉焉',  f:'liuyan',   cmd:60,force:40,intel:75,pol:82,cha:70},
+  {id:'pang',      name:'龐統',  f:'liuyan',   cmd:80,force:35,intel:98,pol:90,cha:75},
+  // 劉表勢力
+  {id:'liubiao',   name:'劉表',  f:'liubiao',  cmd:72,force:50,intel:75,pol:85,cha:80},
+  {id:'kuailiang', name:'蒯良',  f:'liubiao',  cmd:60,force:30,intel:88,pol:85,cha:72},
+  // 袁術勢力
+  {id:'yuanshu',   name:'袁術',  f:'yuanshu',  cmd:65,force:45,intel:55,pol:70,cha:75},
+  {id:'jiling',    name:'紀靈',  f:'yuanshu',  cmd:72,force:88,intel:42,pol:38,cha:55},
+  // 陶謙勢力
+  {id:'taoquian',  name:'陶謙',  f:'taoquian', cmd:62,force:40,intel:72,pol:78,cha:75},
+  // 其他
+  {id:'huatuo',    name:'華佗',  f:'kongrong', cmd:10,force:10,intel:90,pol:85,cha:80},
+  {id:'zhanglu',   name:'張魯',  f:'zhanglu',  cmd:68,force:55,intel:78,pol:70,cha:72},
+];
+
+/* ════════════════════════════════════════════════════════════
+   GAME STATE
+════════════════════════════════════════════════════════════ */
+let G = null; // Game state singleton
+let selectedCityId = null;
+let pendingAction = null;
+
+function initGame(playerFaction) {
+  G = {
+    turn: 1,
+    year: 184,
+    month: 1,
+    playerFaction,
+    phase: 'player',
+    cities: {},
+    officers: {},
+    cityAP: {}, // 每城每回合行動力 { cityId: remaining }
+    log: [],
+    gameover: false,
+  };
+
+  // Init cities
+  CITY_DEF.forEach(cd => {
+    const owner = Object.entries(FACTIONS).find(([k,v]) => v.cities.includes(cd.id));
+    G.cities[cd.id] = {
+      ...cd,
+      owner: owner ? owner[0] : 'none',
+      gold: cd.pop * 20,
+      food: cd.pop * 30,
+      troops: cd.pop * 60,
+      maxTroops: cd.pop * 120,
+      development: cd.fertile * 8,
+      defense: cd.defBase ?? (40 + cd.pop * 5),
+      officers: [],
+    };
+    G.cityAP[cd.id] = 3; // 每城每回合 3 行動力
+  });
+
+  // 24諸侯各持初始城，無需特殊處理
+
+
+  // Init officers — assign to their faction's start city
+  OFFICER_POOL.forEach(o => {
+    const startCity = FACTIONS[o.f]?.startCity || 'xuchang';
+    G.officers[o.id] = {
+      ...o,
+      cityId: startCity,
+      hp: 100,
+      loyalty: o.f === playerFaction ? 100 : 60,
+    };
+    if (G.cities[startCity]) G.cities[startCity].officers.push(o.id);
+  });
+
+  addLog(`── 西元 ${G.year} 年，黃巾之亂爆發，天下大亂！你選擇以【${FACTIONS[playerFaction].name}】${FACTIONS[playerFaction].leader}的身份，逐鹿中原！`);
+}
+
+/* ════════════════════════════════════════════════════════════
+   GAME LOGIC
+════════════════════════════════════════════════════════════ */
+function getTotalRes(faction) {
+  let gold = 0, food = 0, troops = 0;
+  Object.values(G.cities).forEach(c => {
+    if (c.owner === faction) { gold += c.gold; food += c.food; troops += c.troops; }
+  });
+  return {gold, food, troops};
+}
+
+function getPlayerCities() {
+  return Object.values(G.cities).filter(c => c.owner === G.playerFaction);
+}
+
+function getAdjacentCities(cityId) {
+  const adj = [];
+  EDGES.forEach(([a,b]) => {
+    if (a === cityId) adj.push(b);
+    else if (b === cityId) adj.push(a);
+  });
+  return adj;
+}
+
+function canAttackFrom(cityId) {
+  const c = G.cities[cityId];
+  return c.owner === G.playerFaction && c.troops >= 500;
+}
+
+// Internal politics: raise gold/food/troops
+/* ════════════════════════════════════════════════════════════
+   SHARED CORE LOGIC — used by both player and AI
+════════════════════════════════════════════════════════════ */
+
+/**
+ * Apply an internal action (farm / commerce / recruit / develop) to a city.
+ * Works for any faction. Returns false if preconditions not met.
+ */
+function applyInternalAction(cityId, action) {
+  const c = G.cities[cityId];
+  const polOfficer   = getBestOfficer(cityId, 'pol');
+  const intelOfficer = getBestOfficer(cityId, 'intel');
+  const polBonus   = polOfficer   ? 1 + (polOfficer.pol   / 100) * 0.5 : 1;
+  const intelBonus = intelOfficer ? 1 + (intelOfficer.intel / 100) * 0.3 : 1;
+
+  if (action === 'farm') {
+    const gain = Math.floor((c.development * 4 + 50) * intelBonus);
+    c.food += gain;
+    const hint = intelOfficer ? `（${intelOfficer.name}督糧）` : '';
+    addLog(`【${c.name}】屯田：獲得 ${gain} 糧草${hint}。`);
+  } else if (action === 'commerce') {
+    const gain = Math.floor((c.development * 3 + 40) * polBonus);
+    c.gold += gain;
+    const hint = polOfficer ? `（${polOfficer.name}理政）` : '';
+    addLog(`【${c.name}】徵稅：獲得 ${gain} 金${hint}。`);
+  } else if (action === 'recruit') {
+    const cost = 200;
+    if (c.gold < cost) { addLog(`【${c.name}】金不足，無法募兵（需 ${cost} 金）。`); return false; }
+    const gain = Math.floor((100 + c.development * 0.67) * polBonus);
+    c.gold -= cost;
+    c.troops = Math.min(c.troops + gain, c.maxTroops);
+    const hint = polOfficer ? `（${polOfficer.name}招兵）` : '';
+    addLog(`【${c.name}】募兵：耗 ${cost} 金，獲得 ${gain} 兵${hint}。`);
+  } else if (action === 'develop') {
+    const cost = 400;
+    if (c.gold < cost) { addLog(`【${c.name}】金不足，無法開發（需 ${cost} 金）。`); return false; }
+    c.gold -= cost;
+    const devGain = polOfficer && polOfficer.pol >= 80 ? 8 : 5;
+    c.development = Math.min(c.development + devGain, 100);
+    const hint = polOfficer ? `（${polOfficer.name}規劃）` : '';
+    addLog(`【${c.name}】開發：城市發展度 +${devGain}（現為 ${c.development}）${hint}。`);
+  }
+  return true;
+}
+
+/**
+ * Resolve a battle between two cities. `attackerFaction` is used for log messages.
+ * Returns { victory: bool, atkLoss: number, defLoss: number }
+ */
+function resolveBattle(fromId, toId, sendTroops, attackerFaction) {
+  const atk = G.cities[fromId];
+  const def = G.cities[toId];
+
+  const atkCmdr  = getBestOfficer(fromId, 'cmd');
+  const defCmdr  = getBestOfficer(toId, 'cmd');
+  const atkBonus = atkCmdr ? atkCmdr.cmd / 100 : 0.5;
+  const defBonus = defCmdr ? defCmdr.cmd / 100 : 0.5;
+
+  const atkPower = sendTroops * (0.7 + atkBonus * 0.6) * (0.8 + Math.random() * 0.4);
+  const defPower = (def.troops + def.defense * 5) * (0.6 + defBonus * 0.5) * (0.8 + Math.random() * 0.4);
+
+  const atkWin = atkPower > defPower;
+  const atkLoss = Math.min(def.troops + 100, Math.floor(sendTroops * (atkWin ? 0.15 + Math.random() * 0.1 : 0.35 + Math.random() * 0.15)));
+  const defLoss = Math.min(def.troops, sendTroops, Math.floor(def.troops * (atkWin ? 0.8  + Math.random() * 0.4 : 0.15 + Math.random() * 0.1)));
+  const victory = def.troops <= defLoss;
+
+  const isPlayer = attackerFaction === G.playerFaction;
+  const atkName  = isPlayer ? `【${atk.name}】` : `AI【${FACTIONS[attackerFaction]?.name}】`;
+  const cmdrStr  = atkCmdr ? `（主將：${atkCmdr.name} 統${atkCmdr.cmd}）` : '';
+
+  if (victory) {
+    atk.troops -= sendTroops;
+    const surviving = Math.max(0, sendTroops - atkLoss);
+    def.troops = surviving;
+    const prevOwner = def.owner;
+    def.owner = attackerFaction;
+    G.cityAP[toId] = 1;
+    def.officers.forEach(oid => { G.officers[oid].f = attackerFaction; });
+    const capStr = (isPlayer && def.officers.length > 0)
+      ? '俘虜 ' + def.officers.map(i => G.officers[i].name).join('、') + '！' : '';
+    const prevStr = (!isPlayer && prevOwner === G.playerFaction) ? `（原屬 你的城市⚠）` : '';
+    addLog(`⚔ ${atkName} 攻克 ${def.name}！${cmdrStr} 損兵 ${atkLoss}，敵損 ${defLoss}。${capStr}${prevStr}`);
+    flashCity(toId);
+    checkWinLose();
+  } else {
+    atk.troops = Math.max(0, atk.troops - atkLoss);
+    def.troops = Math.max(0, def.troops - defLoss);
+    addLog(`⚔ ${atkName} 攻打 ${def.name} ${atkWin ? '優勢中' : '失敗'}。${cmdrStr} 損兵 ${atkLoss}，敵損 ${defLoss}。`);
+  }
+  return { victory, atkLoss, defLoss };
+}
+
+/* ════════════════════════════════════════════════════════════
+   PLAYER ACTIONS
+════════════════════════════════════════════════════════════ */
+
+function doInternal(cityId, action) {
+  const c = G.cities[cityId];
+  if (c.owner !== G.playerFaction) return;
+  if ((G.cityAP[cityId] ?? 0) < 1) {
+    addLog(`【${c.name}】行動力不足（本回合已用盡）。`);
+    return;
+  }
+  if (!applyInternalAction(cityId, action)) return;
+  G.cityAP[cityId] = Math.max(0, (G.cityAP[cityId] ?? 0) - 1);
+  updateUI();
+}
+
+// Transfer troops between adjacent own cities
+function promptTransfer(fromId) {
+  const from = G.cities[fromId];
+  const adjOwn = getAdjacentCities(fromId).filter(id => G.cities[id].owner === G.playerFaction);
+  if (adjOwn.length === 0) { addLog(`【${from.name}】無相鄰我方城市可移兵。`); return; }
+  if (from.troops < 100) { addLog(`【${from.name}】兵力不足 100，無法移兵。`); return; }
+  if ((G.cityAP[fromId] ?? 0) < 1) { addLog(`【${from.name}】行動力不足。`); return; }
+
+  const maxSend = from.troops - 100; // keep at least 100
+  const modal = document.getElementById('modal-overlay');
+  const body  = document.getElementById('modal-body');
+  modal.classList.remove('hidden');
+  body.innerHTML = `
+    <h3>從【${from.name}】移兵</h3>
+    <p style="font-size:13px;color:var(--muted)">目前兵力：${from.troops}，最少留守 100</p>
+    <div style="margin:12px 0">
+      <label style="font-size:13px">移兵數量</label>
+      <input id="transfer-input" type="number" min="100" max="${maxSend}" step="1" value="${Math.min(500, maxSend)}"
+        style="width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:15px;margin-top:6px">
+    </div>
+    <p style="font-size:13px;color:var(--muted)">目標城市：</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+      ${adjOwn.map(tid=>`
+        <button onclick="doTransfer('${fromId}','${tid}')" style="height:44px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;border-radius:8px">
+          ➡ ${G.cities[tid].name}（兵 ${G.cities[tid].troops}）
+        </button>
+      `).join('')}
+    </div>
+    <button onclick="hideModal()" style="margin-top:16px;height:44px;width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:13px;border-radius:8px">取消</button>
+  `;
+}
+
+function doTransfer(fromId, toId) {
+  const amount = parseInt(document.getElementById('transfer-input')?.value) || 0;
+  const from = G.cities[fromId];
+  const to   = G.cities[toId];
+  const maxSend = from.troops - 100;
+  if (amount < 1 || amount > maxSend) {
+    addLog(`移兵數量無效（1～${maxSend}）。`); return;
+  }
+  if ((G.cityAP[fromId] ?? 0) < 1) { addLog(`【${from.name}】行動力不足。`); return; }
+  from.troops -= amount;
+  to.troops = Math.min(to.troops + amount, to.maxTroops);
+  G.cityAP[fromId] = Math.max(0, (G.cityAP[fromId] ?? 0) - 1);
+  hideModal();
+  addLog(`🚚 【${from.name}】向【${to.name}】移兵 ${amount}。`);
+  updateUI();
+}
+
+// Battle: player attacks target city
+function doAttack(fromId, toId, sendTroops) {
+  const atk = G.cities[fromId];
+  if (atk.troops < sendTroops) { addLog('兵力不足！'); return; }
+  if ((G.cityAP[fromId] ?? 0) < 2) {
+    addLog(`【${atk.name}】行動力不足，攻城需要 2 點行動力（現剩 ${G.cityAP[fromId] ?? 0}）。`);
+    return;
+  }
+  resolveBattle(fromId, toId, sendTroops, G.playerFaction);
+  G.cityAP[fromId] = Math.max(0, (G.cityAP[fromId] ?? 0) - 2);
+  updateUI();
+}
+
+function getBestOfficer(cityId, stat) {
+  const c = G.cities[cityId];
+  let best = null;
+  c.officers.forEach(oid => {
+    const o = G.officers[oid];
+    if (!best || o[stat] > best[stat]) best = o;
+  });
+  return best;
+}
+
+// AI turn: simple greedy
+function doAITurn() {
+  const aiFactions = Object.keys(FACTIONS).filter(f => f !== G.playerFaction);
+  aiFactions.forEach(faction => {
+    const myCities = Object.values(G.cities).filter(c => c.owner === faction);
+    if (myCities.length === 0) return;
+
+    // Try to attack a neighbour if troops sufficient
+    myCities.sort((a,b) => b.troops - a.troops);
+    
+    // Internal actions — use same logic as player
+    myCities.forEach(city => {
+      if (city.troops >= city.maxTroops * 0.5) {
+        tryAttackAdjacent(city);
+      }
+      applyInternalAction(city.id, 'farm');
+      applyInternalAction(city.id, 'commerce');
+      if (city.development < 100 && city.gold >= 400) applyInternalAction(city.id, 'develop');
+      if (city.troops < city.maxTroops && city.gold >= 200) applyInternalAction(city.id, 'recruit');
+    });
+
+    function tryAttackAdjacent(city) {
+      const adj = getAdjacentCities(city.id);
+      const targets = adj.map(id => G.cities[id]).filter(c => c.owner !== faction);
+      if (targets.length === 0) return;
+
+      const target = targets.sort((a,b) => a.troops - b.troops)[0];
+      if (!target) return;
+      if (city.troops < city.maxTroops && target.troops > city.troops * 0.6) return;
+      const sendTroops = Math.floor(city.troops * 0.6);
+      resolveBattle(city.id, target.id, sendTroops, faction);
+    }
+  });
+}
+
+function surrender() {
+  if (G.gameover) return;
+  G.gameover = true;
+  showResult(false, `${G.year} 年 ${G.month} 月，你投降了。`);
+  sessionStorage.removeItem('gameState');
+}
+
+function endTurn() {
+  if (G.gameover) return;
+  const warnings = [];
+
+  doAITurn();
+
+  // Reset AP for all cities
+  Object.keys(G.cityAP).forEach(id => {
+    G.cityAP[id] = 3;
+  });
+
+  G.month++;
+  if (G.month > 12) { G.month = 1; G.year++; }
+  G.turn++;
+  
+  // Monthly income and food/troop upkeep for player cities
+  Object.values(G.cities).forEach(c => {
+    c.food += Math.floor(c.development * 2 + 20);
+    c.gold += Math.floor(c.development * 1.5 + 15);
+    // 糧草消耗：兵力越多耗糧越快
+    const foodCost = Math.floor(c.troops * 0.2);
+    if (c.food >= foodCost) {
+      c.food -= foodCost;
+    } else {
+      // 糧盡兵散：兵力減少 8%
+      const troopLoss = Math.floor(c.troops * 0.08);
+      c.food = 0;
+      c.troops = Math.max(0, c.troops - troopLoss);
+      if (troopLoss > 0) warnings.push(`【${c.name}】糧草耗盡！損失 ${troopLoss} 兵（糧盡兵散）。`);
+    }
+  });
+  addLog(`── ${G.year} 年 ${G.month} 月，新回合開始。各城行動力已重置。`);
+  warnings.forEach(w => addLog(`⚠ ${w}`));
+  updateUI();
+  checkWinLose();
+  // save in sessionStorage
+  sessionStorage.setItem('gameState', JSON.stringify(G));
+}
+
+function checkWinLose() {
+  if (G.gameover) return;
+  const myCities = getPlayerCities().length;
+  const totalCities = CITY_DEF.length;
+  if (myCities === 0) {
+    G.gameover = true;
+    showResult(false, `${G.year} 年 ${G.month} 月，你的勢力滅亡了。`);
+  } else if (myCities >= totalCities) {
+    G.gameover = true;
+    showResult(true, `${G.year} 年 ${G.month} 月，你統一了天下！`);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI — Map
+════════════════════════════════════════════════════════════ */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function getFactionColor(owner) {
+  return FACTIONS[owner]?.color || '#555';
+}
+
+function buildMap() {
+  const svg = document.getElementById('map-svg');
+  svg.innerHTML = '';
+
+  // Draw background territories (subtle)
+  const defs = document.createElementNS(SVG_NS,'defs');
+  svg.appendChild(defs);
+
+  // Edges
+  const edgeG = document.createElementNS(SVG_NS,'g');
+  EDGES.forEach(([a,b]) => {
+    const ca = CITY_DEF.find(c=>c.id===a);
+    const cb = CITY_DEF.find(c=>c.id===b);
+    if (!ca||!cb) return;
+    const line = document.createElementNS(SVG_NS,'line');
+    line.setAttribute('x1',ca.x); line.setAttribute('y1',ca.y);
+    line.setAttribute('x2',cb.x); line.setAttribute('y2',cb.y);
+    line.setAttribute('stroke','#2d333b');
+    line.setAttribute('stroke-width','2.5');
+    edgeG.appendChild(line);
+  });
+  svg.appendChild(edgeG);
+
+  // Cities
+  CITY_DEF.forEach(cd => {
+    const g = document.createElementNS(SVG_NS,'g');
+    g.setAttribute('class','city-group');
+    g.setAttribute('id','cg-'+cd.id);
+    g.setAttribute('transform',`translate(${cd.x},${cd.y})`);
+    g.addEventListener('click', () => selectCity(cd.id));
+
+    const city = G.cities[cd.id];
+    const color = getFactionColor(city.owner);
+    const r = 20 + city.pop * 1.2; // 2x scale for 1600×1120 viewBox
+    const touchR = Math.max(r + 8, 28);
+
+    // Shadow
+    const shadow = document.createElementNS(SVG_NS,'circle');
+    shadow.setAttribute('r', r+3); shadow.setAttribute('fill','rgba(0,0,0,.4)');
+    shadow.setAttribute('cy',3);
+
+    const bg = document.createElementNS(SVG_NS,'circle');
+    bg.setAttribute('class','city-bg');
+    bg.setAttribute('r', r);
+    bg.setAttribute('fill', color);
+    bg.setAttribute('stroke', '#0d1117');
+    bg.setAttribute('stroke-width', '3');
+    bg.setAttribute('fill-opacity', '0.85');
+
+    const label = document.createElementNS(SVG_NS,'text');
+    label.setAttribute('class','city-label');
+    label.setAttribute('y',5);
+    label.setAttribute('font-size','14');
+    label.textContent = cd.name;
+
+    const troops = document.createElementNS(SVG_NS,'text');
+    troops.setAttribute('class','city-pop');
+    troops.setAttribute('y', r + 12);
+    troops.setAttribute('font-size','12');
+    troops.textContent = city.troops;
+
+    // Invisible large touch target (must be last so it's on top)
+    const touch = document.createElementNS(SVG_NS,'circle');
+    touch.setAttribute('class','city-touch');
+    touch.setAttribute('r', touchR);
+
+    g.appendChild(shadow); g.appendChild(bg); g.appendChild(label); g.appendChild(troops); g.appendChild(touch);
+    svg.appendChild(g);
+  });
+}
+
+// ─────────── Map pan/drag ───────────
+(function initMapPan() {
+  const area = document.getElementById('map-area');
+  let dragging = false, moved = false;
+  let startX, startY, scrollX, scrollY, pid;
+
+  area.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    dragging = true; moved = false;
+    pid = e.pointerId;
+    startX = e.clientX; startY = e.clientY;
+    scrollX = area.scrollLeft; scrollY = area.scrollTop;
+    // 這裡不要 setPointerCapture
+  });
+
+  area.addEventListener('pointermove', e => {
+    if (!dragging || e.pointerId !== pid) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+
+    if (!moved) {                       // 第一次超過門檻才進入拖曳模式
+      moved = true;
+      area.setPointerCapture(pid);
+      area.classList.add('panning');
+    }
+    area.scrollLeft = scrollX - dx;
+    area.scrollTop  = scrollY - dy;
+  });
+
+  function end(e) {
+    if (e.pointerId !== pid) return;
+    dragging = false;
+    area.classList.remove('panning');
+    if (area.hasPointerCapture(pid)) area.releasePointerCapture(pid);
+    // 拖曳後的 click 會在 pointerup 之後同步觸發，
+    // 用 setTimeout 在 click 處理完後再重置 moved
+    setTimeout(() => { moved = false; }, 0);
+  }
+  area.addEventListener('pointerup', end);
+  area.addEventListener('pointercancel', end);
+
+  // 只吞掉「拖曳後」的那一次 click
+  area.addEventListener('click', e => {
+    if (moved) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+})();
+
+function updateMap() {
+  CITY_DEF.forEach(cd => {
+    const g = document.getElementById('cg-'+cd.id);
+    if (!g) return;
+    const city = G.cities[cd.id];
+    const color = getFactionColor(city.owner);
+    const bg = g.querySelector('.city-bg');
+    if (bg) {
+      bg.setAttribute('fill', color);
+      // 我方城市有剩餘 AP 時，加金色邊框
+      if (city.owner === G.playerFaction && (G.cityAP[cd.id] ?? 0) > 0) {
+        bg.setAttribute('stroke', '#f0c040');
+        bg.setAttribute('stroke-width', '5');
+        bg.setAttribute('filter', 'drop-shadow(0 0 8px #f0c04088)');
+      } else {
+        bg.setAttribute('stroke', '#0d1117');
+        bg.setAttribute('stroke-width', '3');
+        bg.removeAttribute('filter');
+      }
+    }
+    const troops = g.querySelector('.city-pop');
+    if (troops) troops.textContent = city.troops;
+    if (cd.id === selectedCityId) g.setAttribute('class','city-group city-selected');
+    else g.setAttribute('class','city-group');
+  });
+}
+
+function flashCity(cityId) {
+  const g = document.getElementById('cg-'+cityId);
+  if (!g) return;
+  g.classList.add('flash');
+  setTimeout(() => g.classList.remove('flash'), 400);
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI — Bottom Sheet (mobile)
+════════════════════════════════════════════════════════════ */
+function openSheet() {
+  document.getElementById('sidebar').classList.add('open');
+}
+function closeSheet() {
+  document.getElementById('sidebar').classList.remove('open');
+}
+function toggleSheet() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI — Sidebar
+════════════════════════════════════════════════════════════ */
+function selectCity(cityId) {
+  selectedCityId = cityId;
+  updateMap();
+  renderCityPanel(cityId);
+  // Auto-open sheet on mobile
+  const title = document.getElementById('sheet-title');
+  if (title) title.textContent = G.cities[cityId].name;
+  openSheet();
+}
+
+function renderCityPanel(cityId) {
+  const c = G.cities[cityId];
+  const panel = document.getElementById('city-panel');
+  const isOwn = c.owner === G.playerFaction;
+  const faction = FACTIONS[c.owner];
+  const fColor = getFactionColor(c.owner);
+  const ap = G.cityAP[cityId] ?? 0;
+
+  const officers = c.officers.map(oid => G.officers[oid]).filter(Boolean);
+
+  panel.innerHTML = `
+    <h2 style="color:${fColor}">${c.name}</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">
+      ${c.region ? `<span style="color:var(--muted)">${c.region}</span> · ` : ''}隸屬：<span style="color:${fColor};font-weight:700">${faction?.name || '無主'}</span>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-row"><span>💰 金</span><span class="stat-val">${c.gold}</span></div>
+      <div class="stat-row"><span>🌾 糧</span><span class="stat-val">${c.food}</span></div>
+      <div class="stat-row"><span>⚔ 兵</span><span class="stat-val">${c.troops}/${c.maxTroops}</span></div>
+      <div class="stat-row"><span>🛡 城防</span><span class="stat-val">${c.defense}</span></div>
+      <div class="stat-row"><span>🏗 發展</span><span class="stat-val">${c.development}</span></div>
+      ${isOwn ? `<div class="stat-row"><span>⚡ 行動力</span><span class="stat-val" style="color:${ap>0?'var(--gold)':'var(--muted)'}">${ap}/3</span></div>` : ''}
+    </div>
+
+    ${isOwn ? `
+    <h3>內政 <span style="color:var(--muted);font-size:11px">（每次耗 1 ⚡）</span></h3>
+    <div class="actions">
+      <button onclick="doInternal('${cityId}','farm')" ${ap<1?'disabled':''}>🌾 屯田 <span>+${Math.floor(c.development*4+50)} 糧</span></button>
+      <button onclick="doInternal('${cityId}','commerce')" ${ap<1?'disabled':''}>💰 徵稅 <span>+${Math.floor(c.development*3+40)} 金</span></button>
+      <button onclick="doInternal('${cityId}','recruit')" ${(ap<1||c.gold<200)?'disabled':''}>⚔ 募兵 <span>-200金 +兵</span></button>
+      <button onclick="doInternal('${cityId}','develop')" ${(ap<1||c.gold<400)?'disabled':''}>🏗 開發 <span>-400金 +發展</span></button>
+    </div>
+    <h3 style="margin-top:10px">軍事 <span style="color:var(--muted);font-size:11px">（攻城耗 2 ⚡，移兵耗 1 ⚡）</span></h3>
+    <div class="actions">
+      ${getAdjacentCities(cityId).filter(id=>G.cities[id].owner!==G.playerFaction).map(tid=>`
+        <button onclick="promptAttack('${cityId}','${tid}')" ${(c.troops<200||ap<2)?'disabled':''}>⚔ 攻 ${G.cities[tid].name} <span style="color:${getFactionColor(G.cities[tid].owner)}">${FACTIONS[G.cities[tid].owner]?.name||'無主'}</span></button>
+      `).join('')}
+      ${getAdjacentCities(cityId).filter(id=>G.cities[id].owner!==G.playerFaction).length===0 ? '<div style="color:var(--muted);font-size:11px;padding:4px">無相鄰敵城</div>' : ''}
+      <button onclick="promptTransfer('${cityId}')" ${(c.troops<=100||ap<1)?'disabled':''}>🚚 移兵至相鄰城 <span>兵${c.troops}，留守100</span></button>
+    </div>
+    ` : `
+    <h3>敵方情報</h3>
+    <div style="font-size:12px;color:var(--muted)">攻克此城需要強大的兵力，當前兵力：${c.troops}</div>
+    <h3 style="margin-top:10px">攻打（從相鄰城市）</h3>
+    <div class="actions">
+      ${getAdjacentCities(cityId).filter(id=>G.cities[id].owner===G.playerFaction && G.cities[id].troops>=200).map(fid=>`
+        <button onclick="promptAttack('${fid}','${cityId}')" ${(G.cityAP[fid]??0)<2?'disabled':''}>⚔ 從 ${G.cities[fid].name} 攻打 <span style="color:var(--muted)">${G.cityAP[fid]??0}⚡</span></button>
+      `).join('')}
+      ${getAdjacentCities(cityId).filter(id=>G.cities[id].owner===G.playerFaction).length===0 ? '<div style="color:var(--muted);font-size:11px;padding:4px">無相鄰我方城市</div>' : ''}
+    </div>
+    `}
+
+    <h3 style="margin-top:12px">駐守武將（${officers.length} 人）</h3>
+    <div class="officer-list">
+      ${officers.length === 0 ? '<div style="color:var(--muted);font-size:11px">（無武將）</div>' : ''}
+      ${officers.map(o=>`
+        <div class="officer-card">
+          <div class="name">${o.name}</div>
+          <div class="stats">
+            <span class="stat-tag" style="background:#1a3a5c;color:#7ab8f5" title="統率：影響攻守戰力">統${o.cmd}</span>
+            <span class="stat-tag" style="background:#3a1a1a;color:#f07070" title="武力：影響單兵戰鬥">武${o.force}</span>
+            <span class="stat-tag" style="background:#1a3a1a;color:#70d070" title="智力：影響屯田效率">智${o.intel}</span>
+            <span class="stat-tag" style="background:#3a2a1a;color:#f0c040" title="政治：影響徵稅/募兵/開發">政${o.pol}</span>
+            <span class="stat-tag" style="background:#2a1a3a;color:#c07aff" title="魅力：影響外交">魅${o.cha}</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">
+            統率加成戰力 +${Math.floor(o.cmd*0.6)}%・政治加成內政 +${Math.floor(o.pol*0.5)}%
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function updateTopBar() {
+  const res = getTotalRes(G.playerFaction);
+  document.getElementById('res-gold').textContent = res.gold;
+  // 糧草不足警示：計算總耗糧量
+  const totalFoodCost = getPlayerCities().reduce((s,c) => s + Math.floor(c.troops * 0.2), 0);
+  const foodEl = document.getElementById('res-food');
+  foodEl.textContent = res.food;
+  foodEl.style.color = res.food < totalFoodCost ? '#e05252' : '';
+  document.getElementById('res-troop').textContent = res.troops;
+
+  const fb = document.getElementById('faction-badge');
+  const f = FACTIONS[G.playerFaction];
+  fb.textContent = `${f.name} · ${f.leader}`;
+  fb.style.background = getFactionColor(G.playerFaction) + '33';
+  fb.style.color = getFactionColor(G.playerFaction);
+  fb.style.border = `1px solid ${getFactionColor(G.playerFaction)}66`;
+
+  document.getElementById('phase-info').textContent = `${G.year}.${G.month} 第${G.turn}回 ${getPlayerCities().length}/${CITY_DEF.length}城`;
+}
+
+function updateUI() {
+  updateMap();
+  updateTopBar();
+  if (selectedCityId) renderCityPanel(selectedCityId);
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI — Attack Modal
+════════════════════════════════════════════════════════════ */
+function promptAttack(fromId, toId) {
+  const atk = G.cities[fromId];
+  const def = G.cities[toId];
+  const maxSend = atk.troops;
+
+  showModal(
+    `⚔ 攻打 ${def.name}`,
+    `
+    <div style="font-size:14px;margin-bottom:12px;line-height:1.7">
+      <b>${atk.name}</b> 可用兵力：<b>${atk.troops}</b><br>
+      <b>${def.name}</b> 守備：${def.troops} 兵，城防 ${def.defense}
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:13px;margin-bottom:6px">出兵數量：<b id="troops-val">${Math.floor(maxSend*0.6)}</b></div>
+      <input type="range" id="troops-slider" min="200" max="${maxSend}" step="1" value="${Math.floor(maxSend*0.6)}" oninput="document.getElementById('troops-val').textContent=this.value">
+    </div>
+    <div style="font-size:12px;color:var(--muted)">提示：兵力與主將統率影響勝負，攻城有一定風險。</div>
+    `,
+    () => {
+      const send = parseInt(document.getElementById('troops-slider').value, 10);
+      doAttack(fromId, toId, send);
+    }
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI — Modal
+════════════════════════════════════════════════════════════ */
+function showModal(title, bodyHTML, onConfirm) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  pendingAction = onConfirm;
+}
+
+function hideModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  pendingAction = null;
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI — Log
+════════════════════════════════════════════════════════════ */
+function addLog(msg) {
+  G.log.push(msg);
+  // Desktop log bar
+  const bar = document.getElementById('log-bar');
+  const div = document.createElement('div');
+  div.textContent = msg;
+  bar.appendChild(div);
+  bar.scrollTop = bar.scrollHeight;
+  // Mobile log panel
+  const pb = document.getElementById('log-panel-body');
+  if (pb) {
+    const d = document.createElement('div');
+    d.textContent = msg;
+    pb.appendChild(d);
+    pb.scrollTop = pb.scrollHeight;
+  }
+  if (G.log.length > 300) G.log.shift();
+}
+
+/* ════════════════════════════════════════════════════════════
+   UI — Result
+════════════════════════════════════════════════════════════ */
+function showResult(win, desc) {
+  const s = document.getElementById('result-screen');
+  s.classList.remove('hidden');
+  document.getElementById('result-emoji').textContent = win ? '🏆' : '💀';
+  document.getElementById('result-title').textContent = win ? '天下統一！' : '勢力滅亡';
+  document.getElementById('result-desc').textContent = desc;
+}
+
+function toggleLogPanel() {
+  document.getElementById('log-panel').classList.toggle('open');
+  // close sidebar if open
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+/* ════════════════════════════════════════════════════════════
+   BOOTSTRAP
+════════════════════════════════════════════════════════════ */
+// Dynamically build faction select grid
+(function buildFactionGrid() {
+    // read sessionStorage for saved game state
+  if (sessionStorage.getItem('gameState')) {
+    G = JSON.parse(sessionStorage.getItem('gameState'));
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('app').classList.remove('hidden');
+    buildMap();
+    updateUI();
+    const logs = [...G.log];
+    G.log = [];
+    logs.forEach(addLog);
+    return;
+  }
+  const grid = document.getElementById('faction-select-grid');
+  Object.entries(FACTIONS).forEach(([key, f]) => {
+    const btn = document.createElement('button');
+    btn.className = 'faction-btn';
+    btn.dataset.f = key;
+    btn.style.borderColor = f.color + 'aa';
+    btn.innerHTML = `
+      <span class="flag" style="display:block;width:12px;height:12px;background:${f.color};border-radius:50%;margin-bottom:4px"></span>
+      <strong>${f.leader}</strong>
+      <div class="desc">${f.name}・起於${CITY_DEF.find(c=>c.id===f.startCity)?.name || f.startCity}</div>
+    `;
+    btn.addEventListener('click', () => {
+      document.getElementById('start-screen').style.display = 'none';
+      document.getElementById('app').classList.remove('hidden');
+      initGame(key);
+      buildMap();
+      updateUI();
+    });
+    grid.appendChild(btn);
+  });
+})();
+
+document.getElementById('end-turn-btn').addEventListener('click', () => {
+  if (!G || G.gameover) return;
+  endTurn();
+});
+
+document.getElementById('surrender-btn').addEventListener('click', () => {
+  if (!G || G.gameover) return;
+  showModal('確認投降？','你確定要投降嗎？', () => {
+    surrender();
+  });
+});
+
+document.getElementById('modal-confirm').addEventListener('click', () => {
+  if (pendingAction) pendingAction();
+  hideModal();
+});
+document.getElementById('modal-cancel').addEventListener('click', hideModal);
+</script>
+</body>
+</html>
