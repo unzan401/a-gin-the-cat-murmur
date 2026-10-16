@@ -46,7 +46,7 @@ h3{font-size:13px;color:var(--muted);margin-bottom:4px;margin-top:10px}
 #global-res{display:flex;gap:6px;align-items:center;flex-shrink:0}
 .res-chip{display:flex;align-items:center;gap:2px;font-size:12px}
 .res-chip .val{font-weight:700;font-size:13px}
-#end-turn-btn{flex-shrink:0;padding:0 12px;height:36px;line-height:36px;background:#2f81f7;color:#fff;font-weight:600;font-size:13px;border-radius:8px}
+#end-turn-btn{flex-shrink:0;padding:0 12px;height:36px;line-height:36px;background:#2f81f7;color:#fff;font-weight:600;font-size:13px;border-radius:8px;position:absolute;top:50px;right:12px}
 
 /* App wrapper — single column, full screen */
 #app{display:flex;flex-direction:column;height:100vh;padding-top:var(--topbar-h)}
@@ -193,6 +193,10 @@ h3{font-size:13px;color:var(--muted);margin-bottom:4px;margin-top:10px}
 .btn-cancel{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
 input[type=range]{width:100%;height:36px;margin:6px 0}
 
+/* ─────────── Cover for AI turn ─────────── */
+#cover{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250;display:flex;align-items:center;justify-content:center}
+#cover.hidden{display:none}
+
 /* ─────────── Start screen ─────────── */
 #start-screen{
   position:relative;
@@ -309,7 +313,6 @@ input[type=range]{width:100%;height:36px;margin:6px 0}
 
 <!-- Fixed Topbar (all screen sizes) -->
 <div id="topbar">
-  <span class="title">⚔ 三國志</span>
   <span id="faction-badge" class="faction-badge"></span>
   <span id="phase-info"></span>
   <button id="surrender-btn">投降 ⚔</button>
@@ -352,6 +355,7 @@ input[type=range]{width:100%;height:36px;margin:6px 0}
     </div>
   </div>
 </div>
+<div id="cover" class="hidden"></div>
 
 <!-- Result Screen -->
 <div id="result-screen" class="hidden">
@@ -908,11 +912,13 @@ function surrender() {
   if (G.gameover) return;
   G.gameover = true;
   showResult(false, `${G.year} 年 ${G.month} 月，你投降了。`);
-  sessionStorage.removeItem('gameState');
 }
-
+let isEnding = false;
 function endTurn() {
-  if (G.gameover) return;
+  if (G.gameover || isEnding) return;
+  isEnding = true;
+  // cover the screen when the AI is taking its turn
+  document.getElementById('cover').classList.remove('hidden');
   const warnings = [];
 
   doAITurn();
@@ -946,8 +952,12 @@ function endTurn() {
   warnings.forEach(w => addLog(`⚠ ${w}`));
   updateUI();
   checkWinLose();
-  // save in sessionStorage
-  sessionStorage.setItem('gameState', JSON.stringify(G));
+  document.getElementById('cover').classList.add('hidden');
+
+  if (!G.gameover) {
+    sessionStorage.setItem('gameState', JSON.stringify(G));
+  }
+  setTimeout(() => { isEnding = false; }, 0);
 }
 
 function checkWinLose() {
@@ -1319,6 +1329,9 @@ function addLog(msg) {
    UI — Result
 ════════════════════════════════════════════════════════════ */
 function showResult(win, desc) {
+  console.log(sessionStorage.getItem('gameState'));
+  sessionStorage.removeItem('gameState');
+  console.log(sessionStorage.getItem('gameState'));
   const s = document.getElementById('result-screen');
   s.classList.remove('hidden');
   document.getElementById('result-emoji').textContent = win ? '🏆' : '💀';
