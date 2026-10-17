@@ -288,7 +288,7 @@ input[type=range]{width:100%;height:36px;margin:6px 0}
     bottom:0;
     left:0;
     right:0;
-    z-index:100;
+    z-index:35;
   }
 
   /* Hide mobile-only log UI on desktop */
@@ -563,49 +563,127 @@ const EDGES = [
 const OFFICER_POOL = [
   // 曹操勢力
   {id:'caocao',    name:'曹操',  f:'caocao',   cmd:98,force:72,intel:96,pol:96,cha:94},
-  {id:'xiahou',    name:'夏侯惇',f:'caocao',   cmd:88,force:94,intel:58,pol:52,cha:70},
-  {id:'zhanghe',   name:'張郃',  f:'caocao',   cmd:87,force:85,intel:76,pol:60,cha:72},
-  {id:'xunyu',     name:'荀彧',  f:'caocao',   cmd:68,force:35,intel:97,pol:96,cha:90},
-  {id:'simayi',    name:'司馬懿',f:'caocao',   cmd:92,force:55,intel:98,pol:90,cha:85},
-  {id:'dianwei',   name:'典韋',  f:'caocao',   cmd:70,force:97,intel:40,pol:30,cha:60},
+  {id:'xiahou',    name:'夏侯惇',f:'',   cmd:88,force:94,intel:58,pol:52,cha:70},
+  {id:'zhanghe',   name:'張郃',  f:'',   cmd:87,force:85,intel:76,pol:60,cha:72},
+  {id:'xunyu',     name:'荀彧',  f:'',   cmd:68,force:35,intel:97,pol:96,cha:90},
+  {id:'simayi',    name:'司馬懿',f:'',   cmd:92,force:55,intel:98,pol:90,cha:85},
+  {id:'dianwei',   name:'典韋',  f:'',   cmd:70,force:97,intel:40,pol:30,cha:60},
   // 劉備勢力
   {id:'liubei',    name:'劉備',  f:'liubei',   cmd:75,force:60,intel:70,pol:90,cha:98},
-  {id:'guanyu',    name:'關羽',  f:'liubei',   cmd:95,force:97,intel:72,pol:60,cha:88},
-  {id:'zhangfei',  name:'張飛',  f:'liubei',   cmd:80,force:98,intel:42,pol:40,cha:72},
-  {id:'zhugeliang',name:'諸葛亮',f:'liubei',   cmd:90,force:30,intel:100,pol:98,cha:95},
-  {id:'zhaoyun',   name:'趙雲',  f:'liubei',   cmd:90,force:96,intel:78,pol:68,cha:90},
+  {id:'guanyu',    name:'關羽',  f:'',   cmd:95,force:97,intel:72,pol:60,cha:88},
+  {id:'zhangfei',  name:'張飛',  f:'',   cmd:80,force:98,intel:42,pol:40,cha:72},
+  {id:'zhugeliang',name:'諸葛亮',f:'',   cmd:90,force:30,intel:100,pol:98,cha:95},
+  {id:'zhaoyun',   name:'趙雲',  f:'',   cmd:90,force:96,intel:78,pol:68,cha:90},
   // 孫堅勢力
   {id:'sunjian',   name:'孫堅',  f:'sunjian',  cmd:92,force:90,intel:70,pol:72,cha:85},
-  {id:'zhouyu',    name:'周瑜',  f:'sunjian',  cmd:94,force:68,intel:98,pol:80,cha:92},
-  {id:'lv_meng',   name:'呂蒙',  f:'sunjian',  cmd:88,force:80,intel:92,pol:70,cha:78},
-  {id:'ganxing',   name:'甘寧',  f:'sunjian',  cmd:82,force:92,intel:60,pol:50,cha:74},
-  {id:'lusu',      name:'魯肅',  f:'sunjian',  cmd:70,force:48,intel:93,pol:92,cha:86},
+  {id:'zhouyu',    name:'周瑜',  f:'',  cmd:94,force:68,intel:98,pol:80,cha:92},
+  {id:'lv_meng',   name:'呂蒙',  f:'',  cmd:88,force:80,intel:92,pol:70,cha:78},
+  {id:'ganxing',   name:'甘寧',  f:'',  cmd:82,force:92,intel:60,pol:50,cha:74},
+  {id:'lusu',      name:'魯肅',  f:'',  cmd:70,force:48,intel:93,pol:92,cha:86},
   // 袁紹勢力
   {id:'yuanshao',  name:'袁紹',  f:'yuanshao', cmd:80,force:50,intel:60,pol:75,cha:85},
-  {id:'yanjun',    name:'顏良',  f:'yuanshao', cmd:82,force:96,intel:42,pol:35,cha:65},
-  {id:'wenchuo',   name:'文醜',  f:'yuanshao', cmd:80,force:95,intel:40,pol:32,cha:62},
+  {id:'yanjun',    name:'顏良',  f:'', cmd:82,force:96,intel:42,pol:35,cha:65},
+  {id:'wenchuo',   name:'文醜',  f:'', cmd:80,force:95,intel:40,pol:32,cha:62},
   // 董卓勢力
   {id:'dongzhuo',  name:'董卓',  f:'dongzhuo', cmd:70,force:80,intel:50,pol:40,cha:55},
-  {id:'lvbu',      name:'呂布',  f:'dongzhuo', cmd:78,force:100,intel:52,pol:30,cha:70},
-  {id:'liuru',     name:'李儒',  f:'dongzhuo', cmd:55,force:30,intel:90,pol:80,cha:60},
+  {id:'lvbu',      name:'呂布',  f:'', cmd:78,force:100,intel:52,pol:30,cha:70},
+  {id:'liuru',     name:'李儒',  f:'', cmd:55,force:30,intel:90,pol:80,cha:60},
   // 馬騰勢力
   {id:'mateng',    name:'馬騰',  f:'mateng',   cmd:82,force:88,intel:62,pol:58,cha:72},
-  {id:'machao',    name:'馬超',  f:'mateng',   cmd:84,force:96,intel:62,pol:50,cha:80},
+  {id:'machao',    name:'馬超',  f:'',   cmd:84,force:96,intel:62,pol:50,cha:80},
   // 劉焉勢力
   {id:'liuyan',    name:'劉焉',  f:'liuyan',   cmd:60,force:40,intel:75,pol:82,cha:70},
-  {id:'pang',      name:'龐統',  f:'liuyan',   cmd:80,force:35,intel:98,pol:90,cha:75},
+  {id:'pang',      name:'龐統',  f:'',   cmd:80,force:35,intel:98,pol:90,cha:75},
   // 劉表勢力
   {id:'liubiao',   name:'劉表',  f:'liubiao',  cmd:72,force:50,intel:75,pol:85,cha:80},
-  {id:'kuailiang', name:'蒯良',  f:'liubiao',  cmd:60,force:30,intel:88,pol:85,cha:72},
+  {id:'kuailiang', name:'蒯良',  f:'',  cmd:60,force:30,intel:88,pol:85,cha:72},
   // 袁術勢力
   {id:'yuanshu',   name:'袁術',  f:'yuanshu',  cmd:65,force:45,intel:55,pol:70,cha:75},
-  {id:'jiling',    name:'紀靈',  f:'yuanshu',  cmd:72,force:88,intel:42,pol:38,cha:55},
+  {id:'jiling',    name:'紀靈',  f:'',  cmd:72,force:88,intel:42,pol:38,cha:55},
   // 陶謙勢力
   {id:'taoquian',  name:'陶謙',  f:'taoquian', cmd:62,force:40,intel:72,pol:78,cha:75},
   // 其他
-  {id:'huatuo',    name:'華佗',  f:'kongrong', cmd:10,force:10,intel:90,pol:85,cha:80},
+  {id:'huatuo',    name:'華佗',  f:'', cmd:10,force:10,intel:90,pol:85,cha:80},
   {id:'zhanglu',   name:'張魯',  f:'zhanglu',  cmd:68,force:55,intel:78,pol:70,cha:72},
+
+  // 公孫度、公孫瓚、劉虞
+  {id:'gongsundu', name:'公孫度', f:'gongsundao', cmd:75,force:65,intel:76,pol:78,cha:70},
+  {id:'gongsunzan',name:'公孫瓚', f:'gongsunzan', cmd:85,force:90,intel:72,pol:60,cha:78},
+  {id:'liuyu',     name:'劉虞',   f:'liuyu', cmd:60,force:35,intel:75,pol:92,cha:88},
+  {id:'tianyu',    name:'田豫',   f:'', cmd:78,force:72,intel:82,pol:80,cha:75},
+
+  // 韓馥、張燕、張楊
+  {id:'hanfu',     name:'韓馥',   f:'hanfu', cmd:58,force:35,intel:68,pol:78,cha:65},
+  {id:'zhangyan',  name:'張燕',   f:'zhangyan', cmd:80,force:84,intel:72,pol:55,cha:72},
+  {id:'zhangyang', name:'張楊',   f:'zhangyang', cmd:65,force:65,intel:58,pol:62,cha:70},
+  {id:'yufuluo',   name:'於夫羅', f:'', cmd:72,force:82,intel:55,pol:35,cha:65},
+
+  // 孔融、鮑信、劉岱、張超
+  {id:'kongrong',  name:'孔融',   f:'kongrong', cmd:45,force:25,intel:78,pol:90,cha:82},
+  {id:'baoxin',    name:'鮑信',   f:'baoxin', cmd:78,force:72,intel:76,pol:70,cha:72},
+  {id:'liudai',    name:'劉岱',   f:'liudai', cmd:60,force:45,intel:62,pol:70,cha:65},
+  {id:'zhangchao', name:'張超',   f:'zhangchao', cmd:58,force:45,intel:62,pol:70,cha:68},
+  {id:'taishici',  name:'太史慈', f:'', cmd:82,force:94,intel:70,pol:58,cha:82},
+  {id:'miyu',      name:'糜竺',   f:'', cmd:35,force:25,intel:72,pol:88,cha:82},
+
+  // 孔伷、何儀
+  {id:'kongzhou',  name:'孔伷',   f:'kongzhou', cmd:48,force:25,intel:72,pol:82,cha:70},
+  {id:'heyi',      name:'何儀',   f:'heyi', cmd:55,force:65,intel:42,pol:30,cha:50},
+  {id:'huangshao', name:'黃邵',   f:'', cmd:52,force:62,intel:40,pol:32,cha:45},
+  {id:'liubige',   name:'劉辟',   f:'', cmd:55,force:68,intel:45,pol:35,cha:50},
+
+  // 陶謙、徐州及豫州人才
+  {id:'chenjiao',  name:'陳矯',   f:'', cmd:40,force:25,intel:78,pol:88,cha:72},
+  {id:'chenjiao2', name:'陳登',   f:'', cmd:65,force:42,intel:88,pol:90,cha:85},
+  {id:'zangba',    name:'臧霸',   f:'', cmd:78,force:84,intel:72,pol:58,cha:75},
+  {id:'sunqian',   name:'孫乾',   f:'', cmd:35,force:25,intel:72,pol:82,cha:78},
+
+  // 董卓及關中
+  {id:'guoxian',   name:'郭汜',   f:'', cmd:68,force:82,intel:42,pol:28,cha:45},
+  {id:'lizh',      name:'李傕',   f:'', cmd:72,force:84,intel:48,pol:32,cha:48},
+  {id:'zhangji',   name:'張濟',   f:'', cmd:65,force:72,intel:48,pol:35,cha:50},
+  {id:'huaxiong',  name:'華雄',   f:'', cmd:72,force:92,intel:42,pol:30,cha:60},
+
+  // 曹操、袁紹陣營人才
+  {id:'caoren',    name:'曹仁',   f:'', cmd:86,force:88,intel:72,pol:62,cha:78},
+  {id:'caohong',   name:'曹洪',   f:'', cmd:75,force:82,intel:55,pol:45,cha:65},
+  {id:'xiahoudun', name:'夏侯淵', f:'', cmd:85,force:90,intel:65,pol:48,cha:72},
+  {id:'xunyou',    name:'荀攸',   f:'', cmd:62,force:30,intel:95,pol:88,cha:82},
+  {id:'guojia',    name:'郭嘉',   f:'', cmd:55,force:25,intel:97,pol:82,cha:88},
+  {id:'chengyu',   name:'程昱',   f:'', cmd:60,force:35,intel:90,pol:82,cha:70},
+  {id:'tianfeng',  name:'田豐',   f:'', cmd:58,force:30,intel:92,pol:88,cha:70},
+  {id:'jushou',    name:'沮授',   f:'', cmd:70,force:35,intel:94,pol:90,cha:82},
+  {id:'xuyou',     name:'許攸',   f:'', cmd:40,force:25,intel:88,pol:72,cha:58},
+  {id:'gaolan',    name:'高覽',   f:'', cmd:75,force:86,intel:62,pol:48,cha:65},
+
+  // 孫堅、江東
+  {id:'chengpu',   name:'程普',   f:'', cmd:82,force:82,intel:75,pol:68,cha:78},
+  {id:'huangai',   name:'黃蓋',   f:'', cmd:78,force:86,intel:68,pol:60,cha:76},
+  {id:'han dang',  name:'韓當',   f:'', cmd:75,force:84,intel:62,pol:55,cha:72},
+  {id:'zhangzhao', name:'張昭',   f:'', cmd:35,force:20,intel:88,pol:96,cha:85},
+  {id:'zhanghong', name:'張紘',   f:'', cmd:40,force:20,intel:90,pol:94,cha:82},
+
+  // 荊州
+  {id:'huangzu',   name:'黃祖',   f:'', cmd:68,force:72,intel:55,pol:48,cha:55},
+  {id:'wenpin',    name:'文聘',   f:'', cmd:82,force:82,intel:75,pol:68,cha:75},
+  {id:'caiyao',    name:'蔡瑁',   f:'', cmd:78,force:70,intel:75,pol:72,cha:70},
+  {id:'huangzhong',name:'黃忠',   f:'', cmd:82,force:95,intel:72,pol:58,cha:85},
+
+  // 益州、漢中
+  {id:'yanjun2',   name:'嚴顏',   f:'', cmd:78,force:86,intel:72,pol:62,cha:76},
+  {id:'wangping',  name:'王平',   f:'', cmd:82,force:78,intel:82,pol:68,cha:75},
+  {id:'fazheng',   name:'法正',   f:'', cmd:52,force:28,intel:94,pol:82,cha:80},
+
+  // 馬騰、西涼
+  {id:'pounde',    name:'龐德',   f:'', cmd:80,force:94,intel:68,pol:48,cha:78},
+  {id:'han sui',   name:'韓遂',   f:'', cmd:78,force:68,intel:82,pol:72,cha:75},
+
+  // 交州、南方及其他
+  {id:'shixie',    name:'士燮',   f:'shixie', cmd:55,force:35,intel:78,pol:92,cha:82},
+  {id:'menghuo',   name:'孟獲',   f:'', cmd:72,force:86,intel:50,pol:35,cha:65},
+  {id:'zhurong',   name:'祝融',   f:'', cmd:65,force:88,intel:52,pol:35,cha:72},
 ];
+
 
 /* ════════════════════════════════════════════════════════════
    GAME STATE
@@ -614,12 +692,36 @@ let G = null; // Game state singleton
 let selectedCityId = null;
 let pendingAction = null;
 
-function initGame(playerFaction) {
+/* ── 開發度相關 ── */
+const TROOP_CAP_PER_DEV = 5;   // 兵力容量 = 基礎值 + 開發 × 5
+const AP_BASE = 3;
+const AP_BONUS_DEV = 80;       // 開發度達標有額外行動力
+const AP_BONUS = 1;
+const DEF_PER_DEV = 0.5;   // 每點開發度提供的城防
+
+function calcMaxTroops(c) {
+  return c.baseTroopCap + c.development * TROOP_CAP_PER_DEV;
+}
+function calcDefense(c) {
+  return Math.round(c.baseDefense + c.development * DEF_PER_DEV);
+}
+// 所有改變開發度的地方都用這個，容量與城防才會同步更新
+function setDevelopment(c, value) {
+  c.development = Math.max(0, Math.min(100, Math.round(value)));
+  c.maxTroops = calcMaxTroops(c);
+  c.defense   = calcDefense(c);
+}
+function getMaxAP(cityId) {
+  return AP_BASE + (G.cities[cityId].development >= AP_BONUS_DEV ? AP_BONUS : 0);
+}
+
+function initGame(playerFaction, difficulty = 0.5) {
   G = {
     turn: 1,
     year: 184,
     month: 1,
     playerFaction,
+    difficulty: Math.max(0, Math.min(1, difficulty)),
     phase: 'player',
     cities: {},
     officers: {},
@@ -631,18 +733,23 @@ function initGame(playerFaction) {
   // Init cities
   CITY_DEF.forEach(cd => {
     const owner = Object.entries(FACTIONS).find(([k,v]) => v.cities.includes(cd.id));
-    G.cities[cd.id] = {
+    const city = {
       ...cd,
       owner: owner ? owner[0] : 'none',
       gold: cd.pop * 20,
       food: cd.pop * 30,
       troops: cd.pop * 60,
-      maxTroops: cd.pop * 120,
+      baseTroopCap: cd.pop * 80,
+      maxTroops: 0,
       development: cd.fertile * 8,
-      defense: cd.defBase ?? (40 + cd.pop * 5),
+      // 讓開局城防仍等於 defBase；之後隨開發度升降
+      baseDefense: (cd.defBase ?? (40 + cd.pop * 5)) - cd.fertile * 8 * DEF_PER_DEV,
+      defense: 0,
       officers: [],
     };
-    G.cityAP[cd.id] = 3; // 每城每回合 3 行動力
+    setDevelopment(city, city.development);   // 算出 maxTroops
+    G.cities[cd.id] = city;
+    G.cityAP[cd.id] = getMaxAP(cd.id);
   });
 
   // 24諸侯各持初始城，無需特殊處理
@@ -650,17 +757,18 @@ function initGame(playerFaction) {
 
   // Init officers — assign to their faction's start city
   OFFICER_POOL.forEach(o => {
-    const startCity = FACTIONS[o.f]?.startCity || 'xuchang';
+    const startCity = FACTIONS[o.f]?.startCity || CITY_DEF[Math.floor(Math.random() * CITY_DEF.length)].id; // random;
     G.officers[o.id] = {
       ...o,
       cityId: startCity,
       hp: 100,
-      loyalty: o.f === playerFaction ? 100 : 60,
+      loyalty: 100,
     };
     if (G.cities[startCity]) G.cities[startCity].officers.push(o.id);
   });
 
   addLog(`── 西元 ${G.year} 年，黃巾之亂爆發，天下大亂！你選擇以【${FACTIONS[playerFaction].name}】${FACTIONS[playerFaction].leader}的身份，逐鹿中原！`);
+  addLog(`難度係數 ${G.difficulty.toFixed(1)}：AI 內政效果 ×${(1 + G.difficulty).toFixed(1)}。`);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -701,39 +809,44 @@ function canAttackFrom(cityId) {
  * Apply an internal action (farm / commerce / recruit / develop) to a city.
  * Works for any faction. Returns false if preconditions not met.
  */
-function applyInternalAction(cityId, action) {
+function applyInternalAction(cityId, action, silent = false) {
   const c = G.cities[cityId];
+  const say = msg => { if (!silent) addLog(msg); };
+  // AI 城市：內政效果 × (1 + 難度係數)
+  const mult = c.owner === G.playerFaction ? 1 : 1 + (G.difficulty ?? 0);
+
   const polOfficer   = getBestOfficer(cityId, 'pol');
   const intelOfficer = getBestOfficer(cityId, 'intel');
   const polBonus   = polOfficer   ? 1 + (polOfficer.pol   / 100) * 0.5 : 1;
   const intelBonus = intelOfficer ? 1 + (intelOfficer.intel / 100) * 0.3 : 1;
 
   if (action === 'farm') {
-    const gain = Math.floor((c.development * 4 + 50) * intelBonus);
+    const gain = Math.floor((c.development * 4 + 50) * intelBonus * mult);
     c.food += gain;
     const hint = intelOfficer ? `（${intelOfficer.name}督糧）` : '';
-    addLog(`【${c.name}】屯田：獲得 ${gain} 糧草${hint}。`);
+    say(`【${c.name}】屯田：獲得 ${gain} 糧草${hint}。`);
   } else if (action === 'commerce') {
-    const gain = Math.floor((c.development * 3 + 40) * polBonus);
+    const gain = Math.floor((c.development * 3 + 40) * polBonus * mult);
     c.gold += gain;
     const hint = polOfficer ? `（${polOfficer.name}理政）` : '';
-    addLog(`【${c.name}】徵稅：獲得 ${gain} 金${hint}。`);
+    say(`【${c.name}】徵稅：獲得 ${gain} 金${hint}。`);
   } else if (action === 'recruit') {
     const cost = 200;
-    if (c.gold < cost) { addLog(`【${c.name}】金不足，無法募兵（需 ${cost} 金）。`); return false; }
-    const gain = Math.floor((100 + c.development * 0.67) * polBonus);
+    if (c.gold < cost) { say(`【${c.name}】金不足，無法募兵（需 ${cost} 金）。`); return false; }
+    if (c.troops >= c.maxTroops) { say(`【${c.name}】兵力已達容量上限（${c.maxTroops}）。`); return false; }
+    const gain = Math.floor((100 + c.development * 0.67) * polBonus * mult);
     c.gold -= cost;
-    c.troops = Math.min(c.troops + gain, c.maxTroops);
+    c.troops = Math.max(c.troops, Math.min(c.troops + gain, c.maxTroops));
     const hint = polOfficer ? `（${polOfficer.name}招兵）` : '';
-    addLog(`【${c.name}】募兵：耗 ${cost} 金，獲得 ${gain} 兵${hint}。`);
+    say(`【${c.name}】募兵：耗 ${cost} 金，獲得 ${gain} 兵${hint}。`);
   } else if (action === 'develop') {
     const cost = 400;
-    if (c.gold < cost) { addLog(`【${c.name}】金不足，無法開發（需 ${cost} 金）。`); return false; }
+    if (c.gold < cost) { say(`【${c.name}】金不足，無法開發（需 ${cost} 金）。`); return false; }
     c.gold -= cost;
-    const devGain = polOfficer && polOfficer.pol >= 80 ? 8 : 5;
-    c.development = Math.min(c.development + devGain, 100);
+    const devGain = Math.round((polOfficer && polOfficer.pol >= 80 ? 8 : 5) * mult);
+    setDevelopment(c, c.development + devGain);
     const hint = polOfficer ? `（${polOfficer.name}規劃）` : '';
-    addLog(`【${c.name}】開發：城市發展度 +${devGain}（現為 ${c.development}）${hint}。`);
+    say(`【${c.name}】開發：城市發展度 +${devGain}（現為 ${c.development}，兵力容量 ${c.maxTroops}）${hint}。`);
   }
   return true;
 }
@@ -753,15 +866,27 @@ function resolveBattle(fromId, toId, sendTroops, attackerFaction) {
 
   const atkPower = sendTroops * (0.7 + atkBonus * 0.6) * (0.8 + Math.random() * 0.4);
   const defPower = (def.troops + def.defense * 5) * (0.6 + defBonus * 0.5) * (0.8 + Math.random() * 0.4);
-
-  const atkWin = atkPower > defPower;
-  const atkLoss = Math.min(def.troops + 100, Math.floor(sendTroops * (atkWin ? 0.15 + Math.random() * 0.1 : 0.35 + Math.random() * 0.15)));
-  const defLoss = Math.min(def.troops, sendTroops, Math.floor(def.troops * (atkWin ? 0.8  + Math.random() * 0.4 : 0.15 + Math.random() * 0.1)));
+    // 戰力比：>1 攻方占優，越大越是碾壓
+  const ratio = atkPower / Math.max(1, defPower);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const atkWin = ratio > 1;
+// 攻方損失率：碾壓時很低，險勝或落敗時很高（3%~60%）
+  const atkLossRate = clamp(0.2 / ratio, 0.03, 0.6);
+  // 守方損失率：隨戰力比上升，ratio ≥ 1.25 時守軍全滅（10%~150%）
+  const defLossRate = clamp(0.8 * ratio, 0.1, 1.5);
+  const atkLoss = Math.min(def.troops + 100, Math.floor(sendTroops * atkLossRate));
+  const defLoss = Math.min(def.troops, sendTroops, Math.floor(def.troops * defLossRate));
   const victory = def.troops <= defLoss;
+
+  // 攻城破壞：開發度 -= 出兵數 × 0.02 × 隨機係數
+  const devBefore = def.development;
+  setDevelopment(def, def.development - Math.floor(sendTroops * 0.02 * Math.random() * clamp(1 / ratio, 0.3, 1)));
+  const devLoss = devBefore - def.development;
 
   const isPlayer = attackerFaction === G.playerFaction;
   const atkName  = isPlayer ? `【${atk.name}】` : `AI【${FACTIONS[attackerFaction]?.name}】`;
   const cmdrStr  = atkCmdr ? `（主將：${atkCmdr.name} 統${atkCmdr.cmd}）` : '';
+  const devStr   = devLoss > 0 ? ` 城市開發 -${devLoss}。` : '';
 
   if (victory) {
     atk.troops -= sendTroops;
@@ -774,13 +899,13 @@ function resolveBattle(fromId, toId, sendTroops, attackerFaction) {
     const capStr = (isPlayer && def.officers.length > 0)
       ? '俘虜 ' + def.officers.map(i => G.officers[i].name).join('、') + '！' : '';
     const prevStr = (!isPlayer && prevOwner === G.playerFaction) ? `（原屬 你的城市⚠）` : '';
-    addLog(`⚔ ${atkName} 攻克 ${def.name}！${cmdrStr} 損兵 ${atkLoss}，敵損 ${defLoss}。${capStr}${prevStr}`);
+    addLog(`⚔ ${atkName} 攻克 ${def.name}！${cmdrStr} 損兵 ${atkLoss}，敵損 ${defLoss}。${devStr}${capStr}${prevStr}`);
     flashCity(toId);
     checkWinLose();
   } else {
     atk.troops = Math.max(0, atk.troops - atkLoss);
     def.troops = Math.max(0, def.troops - defLoss);
-    addLog(`⚔ ${atkName} 攻打 ${def.name} ${atkWin ? '優勢中' : '失敗'}。${cmdrStr} 損兵 ${atkLoss}，敵損 ${defLoss}。`);
+    addLog(`⚔ ${atkName} 攻打 ${def.name} ${atkWin ? '優勢中' : '失敗'}。${cmdrStr} 損兵 ${atkLoss}，敵損 ${defLoss}。${devStr}`);
   }
   return { victory, atkLoss, defLoss };
 }
@@ -806,47 +931,65 @@ function promptTransfer(fromId) {
   const from = G.cities[fromId];
   const adjOwn = getAdjacentCities(fromId).filter(id => G.cities[id].owner === G.playerFaction);
   if (adjOwn.length === 0) { addLog(`【${from.name}】無相鄰我方城市可移兵。`); return; }
-  if (from.troops < 100) { addLog(`【${from.name}】兵力不足 100，無法移兵。`); return; }
   if ((G.cityAP[fromId] ?? 0) < 1) { addLog(`【${from.name}】行動力不足。`); return; }
 
-  const maxSend = from.troops - 100; // keep at least 100
-  const modal = document.getElementById('modal-overlay');
-  const body  = document.getElementById('modal-body');
-  modal.classList.remove('hidden');
-  body.innerHTML = `
-    <h3>從【${from.name}】移兵</h3>
-    <p style="font-size:13px;color:var(--muted)">目前兵力：${from.troops}，最少留守 100</p>
-    <div style="margin:12px 0">
-      <label style="font-size:13px">移兵數量</label>
-      <input id="transfer-input" type="number" min="100" max="${maxSend}" step="1" value="${Math.min(500, maxSend)}"
-        style="width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:15px;margin-top:6px">
+  const maxTroops = Math.max(0, from.troops - 100);   // 至少留守 100
+  const inputStyle = 'width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:15px;margin-top:6px';
+  const field = (id, label, max, val) => `
+    <div style="margin-bottom:10px">
+      <label style="font-size:13px">${label}（最多 ${max}）</label>
+      <input id="${id}" type="number" min="0" max="${max}" step="1" value="${val}" style="${inputStyle}">
+    </div>`;
+
+  showModal(
+    `🚚 從【${from.name}】移兵`,
+    `
+    <div style="margin-bottom:10px">
+      <label style="font-size:13px">目標城市</label>
+      <select id="transfer-target" style="${inputStyle}">
+        ${adjOwn.map(tid => `<option value="${tid}">${G.cities[tid].name}（兵 ${G.cities[tid].troops}/${G.cities[tid].maxTroops}）</option>`).join('')}
+      </select>
     </div>
-    <p style="font-size:13px;color:var(--muted)">目標城市：</p>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-      ${adjOwn.map(tid=>`
-        <button onclick="doTransfer('${fromId}','${tid}')" style="height:44px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;border-radius:8px">
-          ➡ ${G.cities[tid].name}（兵 ${G.cities[tid].troops}）
-        </button>
-      `).join('')}
-    </div>
-    <button onclick="hideModal()" style="margin-top:16px;height:44px;width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:13px;border-radius:8px">取消</button>
-  `;
+    ${field('transfer-troops', '⚔ 兵力', maxTroops, Math.min(500, maxTroops))}
+    ${field('transfer-gold',   '💰 金', from.gold, 0)}
+    ${field('transfer-food',   '🌾 糧', from.food, 0)}
+    <div style="font-size:12px;color:var(--muted)">本城至少留守 100 兵；目標城兵力受容量限制，超出的部分不會移動。</div>
+    `,
+    () => doTransfer(fromId)
+  );
 }
 
-function doTransfer(fromId, toId) {
-  const amount = parseInt(document.getElementById('transfer-input')?.value) || 0;
+function doTransfer(fromId) {
   const from = G.cities[fromId];
-  const to   = G.cities[toId];
-  const maxSend = from.troops - 100;
-  if (amount < 1 || amount > maxSend) {
-    addLog(`移兵數量無效（1～${maxSend}）。`); return;
-  }
+  const to   = G.cities[document.getElementById('transfer-target')?.value];
+  const read = id => Math.max(0, parseInt(document.getElementById(id)?.value, 10) || 0);
+  let troops = read('transfer-troops');
+  const gold = read('transfer-gold');
+  const food = read('transfer-food');
+  const maxTroops = Math.max(0, from.troops - 100);
+
+  if (!to || to.owner !== G.playerFaction) { addLog('移兵目標無效。'); return; }
   if ((G.cityAP[fromId] ?? 0) < 1) { addLog(`【${from.name}】行動力不足。`); return; }
-  from.troops -= amount;
-  to.troops = Math.min(to.troops + amount, to.maxTroops);
+  if (troops > maxTroops) { addLog(`移兵數量無效（最多 ${maxTroops}，需留守 100）。`); return; }
+  if (gold > from.gold || food > from.food) { addLog(`【${from.name}】金糧不足。`); return; }
+
+  const space = Math.max(0, to.maxTroops - to.troops);
+  if (troops > space) {
+    addLog(`【${to.name}】兵力容量只剩 ${space}，移兵數量已調整。`);
+    troops = space;
+  }
+  if (troops + gold + food === 0) { addLog('沒有可移動的兵力或錢糧。'); return; }
+
+  from.troops -= troops; to.troops += troops;
+  from.gold   -= gold;   to.gold   += gold;
+  from.food   -= food;   to.food   += food;
   G.cityAP[fromId] = Math.max(0, (G.cityAP[fromId] ?? 0) - 1);
-  hideModal();
-  addLog(`🚚 【${from.name}】向【${to.name}】移兵 ${amount}。`);
+
+  const parts = [];
+  if (troops) parts.push(`兵 ${troops}`);
+  if (gold)   parts.push(`金 ${gold}`);
+  if (food)   parts.push(`糧 ${food}`);
+  addLog(`🚚 【${from.name}】向【${to.name}】運送：${parts.join('、')}。`);
   updateUI();
 }
 
@@ -920,12 +1063,23 @@ function endTurn() {
   // cover the screen when the AI is taking its turn
   document.getElementById('cover').classList.remove('hidden');
   const warnings = [];
+  let taxCities = 0;
+  let taxTotal = 0;
+  getPlayerCities().forEach(c => {
+    const ap = G.cityAP[c.id] ?? 0;
+    if (ap <= 0) return;
+    const before = c.gold;
+    for (let i = 0; i < ap; i++) applyInternalAction(c.id, 'commerce', true);
+    G.cityAP[c.id] = 0;
+    taxCities++; taxTotal += c.gold - before;
+  });
+  if (taxCities > 0) addLog(`💰 剩餘行動力自動徵稅：${taxCities} 城共獲得 ${taxTotal} 金。`);
 
   doAITurn();
 
   // Reset AP for all cities
   Object.keys(G.cityAP).forEach(id => {
-    G.cityAP[id] = 3;
+    G.cityAP[id] = getMaxAP(id);
   });
 
   G.month++;
@@ -1181,7 +1335,7 @@ function renderCityPanel(cityId) {
       <div class="stat-row"><span>⚔ 兵</span><span class="stat-val">${c.troops}/${c.maxTroops}</span></div>
       <div class="stat-row"><span>🛡 城防</span><span class="stat-val">${c.defense}</span></div>
       <div class="stat-row"><span>🏗 發展</span><span class="stat-val">${c.development}</span></div>
-      ${isOwn ? `<div class="stat-row"><span>⚡ 行動力</span><span class="stat-val" style="color:${ap>0?'var(--gold)':'var(--muted)'}">${ap}/3</span></div>` : ''}
+      ${isOwn ? `<div class="stat-row"><span>⚡ 行動力</span><span class="stat-val" style="color:${ap>0?'var(--gold)':'var(--muted)'}">${ap}/${getMaxAP(cityId)}</span></div>` : ''}
     </div>
 
     ${isOwn ? `
@@ -1189,8 +1343,8 @@ function renderCityPanel(cityId) {
     <div class="actions">
       <button onclick="doInternal('${cityId}','farm')" ${ap<1?'disabled':''}>🌾 屯田 <span>+${Math.floor(c.development*4+50)} 糧</span></button>
       <button onclick="doInternal('${cityId}','commerce')" ${ap<1?'disabled':''}>💰 徵稅 <span>+${Math.floor(c.development*3+40)} 金</span></button>
-      <button onclick="doInternal('${cityId}','recruit')" ${(ap<1||c.gold<200)?'disabled':''}>⚔ 募兵 <span>-200金 +兵</span></button>
-      <button onclick="doInternal('${cityId}','develop')" ${(ap<1||c.gold<400)?'disabled':''}>🏗 開發 <span>-400金 +發展</span></button>
+      <button onclick="doInternal('${cityId}','recruit')" ${(ap<1||c.gold<200 || c.troops>=c.maxTroops)?'disabled':''}>⚔ 募兵 <span>-200金 +兵</span></button>
+      <button onclick="doInternal('${cityId}','develop')" ${(ap<1||c.gold<400 || c.development>=100)?'disabled':''}>🏗 開發 <span>-400金 +發展</span></button>
     </div>
     <h3 style="margin-top:10px">軍事 <span style="color:var(--muted);font-size:11px">（攻城耗 2 ⚡，移兵耗 1 ⚡）</span></h3>
     <div class="actions">
@@ -1198,7 +1352,7 @@ function renderCityPanel(cityId) {
         <button onclick="promptAttack('${cityId}','${tid}')" ${(c.troops<200||ap<2)?'disabled':''}>⚔ 攻 ${G.cities[tid].name} <span style="color:${getFactionColor(G.cities[tid].owner)}">${FACTIONS[G.cities[tid].owner]?.name||'無主'}</span></button>
       `).join('')}
       ${getAdjacentCities(cityId).filter(id=>G.cities[id].owner!==G.playerFaction).length===0 ? '<div style="color:var(--muted);font-size:11px;padding:4px">無相鄰敵城</div>' : ''}
-      <button onclick="promptTransfer('${cityId}')" ${(c.troops<=100||ap<1)?'disabled':''}>🚚 移兵至相鄰城 <span>兵${c.troops}，留守100</span></button>
+      <button onclick="promptTransfer('${cityId}')" ${(c.troops<=100||ap<1)?'disabled':''}>🚚 移兵／運補 <span>可帶金糧</span></button>
     </div>
     ` : `
     <h3>敵方情報</h3>
@@ -1231,7 +1385,31 @@ function renderCityPanel(cityId) {
         </div>
       `).join('')}
     </div>
+    <h3 style="margin-top:12px">歷史戰報</h3>
+    <button style="margin-top:8px" onclick="checkHistory('${cityId}')">查看</button>
   `;
+}
+
+function checkHistory(cityId) {
+    const cityName = G.cities[cityId].name;
+    const history = [];
+    for (let index = G.log.length - 1; index >= 0 && history.length < 10; index--) {
+        const log = G.log[index];
+        if (log.includes(cityName)) {
+            history.push(log);
+        }
+    }
+    showModal(
+        '歷史戰報',
+        `
+            ${history.map(log => `
+                <div style="font-size:14px;margin-bottom:12px;line-height:1.7">
+                    ${log}
+                </div>
+            `).join('')}
+        `,
+        () => {}
+    );
 }
 
 function updateTopBar() {
@@ -1363,6 +1541,23 @@ function toggleLogPanel() {
     return;
   }
   const grid = document.getElementById('faction-select-grid');
+
+  // 難度係數滑桿
+  const diff = document.createElement('div');
+  diff.style.cssText = 'margin:0 auto 16px;max-width:360px;text-align:center';
+  diff.innerHTML = `
+    <div style="font-size:13px;margin-bottom:6px">
+      難度係數：<b id="difficulty-val">0.5</b>
+      <span style="color:var(--muted);font-size:11px">（AI 內政效果 ×<span id="difficulty-mult">1.5</span>）</span>
+    </div>
+    <input type="range" id="difficulty-slider" min="0" max="1" step="0.1" value="0.5" style="width:100%">
+  `;
+  grid.parentNode.insertBefore(diff, grid);
+  const slider = diff.querySelector('#difficulty-slider');
+  slider.addEventListener('input', () => {
+    diff.querySelector('#difficulty-val').textContent = slider.value;
+    diff.querySelector('#difficulty-mult').textContent = (1 + parseFloat(slider.value)).toFixed(1);
+  });
   Object.entries(FACTIONS).forEach(([key, f]) => {
     const btn = document.createElement('button');
     btn.className = 'faction-btn';
